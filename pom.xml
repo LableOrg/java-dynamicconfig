@@ -1,0 +1,60 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.lable</groupId>
+    <artifactId>common</artifactId>
+    <version>0.10</version>
+  </parent>
+
+  <groupId>org.lable.distributedconfig</groupId>
+  <artifactId>distributedconfig</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Distributed configuration</name>
+  
+  <modules>
+    <module>core</module>
+    <module>config-zookeeper</module>
+  </modules>
+
+  <properties>
+    <scm.url>scm:git:git@git.lable.org:lable/distributed-config.git</scm.url>
+  </properties>
+
+  <scm>
+    <connection>${scm.url}</connection>
+    <url>${scm.url}</url>
+    <developerConnection>${scm.url}</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <dependencies>
+    <!-- Testing dependencies. -->
+    <dependency>
+      <!--This dependency is used in the IT example, feel free to remove it. -->
+      <groupId>com.github.stefanbirkner</groupId>
+      <artifactId>system-rules</artifactId>
+      <version>1.4.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
