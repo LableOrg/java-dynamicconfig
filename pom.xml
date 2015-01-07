@@ -5,23 +5,33 @@
   <parent>
     <groupId>org.lable</groupId>
     <artifactId>common</artifactId>
-    <version>0.10</version>
+    <version>0.12</version>
   </parent>
 
-  <groupId>org.lable.distributedconfig</groupId>
-  <artifactId>distributedconfig</artifactId>
+  <groupId>org.lable.dynamicconfig</groupId>
+  <artifactId>dynamicconfig</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Distributed configuration</name>
-  
+  <name>Dynamic configuration</name>
+  <description>
+    A configuration library designed as a provider of Apache Commons Configuration instances that can
+    be updated at runtime.
+  </description>
+
   <modules>
     <module>core</module>
-    <module>config-zookeeper</module>
+    <module>provider-zookeeper</module>
+    <module>webviewer</module>
+    <module>webviewer-it</module>
   </modules>
 
   <properties>
-    <scm.url>scm:git:git@git.lable.org:lable/distributed-config.git</scm.url>
+    <zookeeper.version>3.4.6</zookeeper.version>
+    <!--<zookeeper.version>3.4.5-cdh5.1.0</zookeeper.version>-->
+    <slf4j.version>1.7.10</slf4j.version>
+    <log4j.version>2.1</log4j.version>
+    <scm.url>scm:git:git@git.lable.org:lable/dynamic-config.git</scm.url>
   </properties>
 
   <scm>
@@ -31,23 +41,39 @@
     <tag>HEAD</tag>
   </scm>
 
-  <dependencies>
-    <!-- Testing dependencies. -->
-    <dependency>
-      <!--This dependency is used in the IT example, feel free to remove it. -->
-      <groupId>com.github.stefanbirkner</groupId>
-      <artifactId>system-rules</artifactId>
-      <version>1.4.0</version>
-    </dependency>
-  </dependencies>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-      </plugin>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.tomcat.maven</groupId>
+          <artifactId>tomcat7-maven-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>2.2</version>
+          <configuration>
+            <archive>
+              <addMavenDescriptor>false</addMavenDescriptor>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
       </plugin>

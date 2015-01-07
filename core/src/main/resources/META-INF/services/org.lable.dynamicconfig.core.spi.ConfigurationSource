@@ -1,0 +1,2 @@
+org.lable.dynamicconfig.provider.FileBasedConfigSource
+org.lable.dynamicconfig.provider.OnClasspathConfigSource

@@ -8,37 +8,31 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>core</artifactId>
+  <groupId>org.lable.dynamicconfig.provider</groupId>
+  <artifactId>zookeeper</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>Dynamic configuration :: core library</name>
+  <name>Dynamic configuration :: ZooKeeper provider</name>
+
+  <repositories>
+    <!-- Cloudera's CDH HBase distribution. -->
+    <repository>
+      <id>cloudera</id>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
-      <groupId>commons-configuration</groupId>
-      <artifactId>commons-configuration</artifactId>
-      <version>1.10</version>
+      <groupId>org.lable.dynamicconfig</groupId>
+      <artifactId>core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.14</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.8.8</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.9.8</version>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>${zookeeper.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -64,4 +58,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>
