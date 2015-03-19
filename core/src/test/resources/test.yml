@@ -5,7 +5,7 @@ type:
         - "One"
         - "Two"
         - "…"
-    string: "Okay"
+    string: Okay
     booleanFalse: false
     booleanTrue: true
     unicodeString: "€"

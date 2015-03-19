@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class NodeWatcher implements Watcher, Runnable {
     private final static Logger logger = LoggerFactory.getLogger(NodeWatcher.class);
 
-    /**
+    /*
      * If the Zookeeper quorum cannot be reached, the watcher thread will attempt to reconnect, with incrementally
      * longer waits between attempts. It should wait at most this long (in minutes) between attempts.
      */
@@ -29,7 +29,7 @@ public class NodeWatcher implements Watcher, Runnable {
     private int retryWait;
 
     /**
-     * Construct a new Executor.
+     * Construct a new NodeWatcher.
      *
      * @param quorum Comma-separated list of addresses for the Zookeeper quorum.
      * @param callback Callback method called upon changes in the node.

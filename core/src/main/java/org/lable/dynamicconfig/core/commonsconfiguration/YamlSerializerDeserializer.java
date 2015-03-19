@@ -3,6 +3,7 @@ package org.lable.dynamicconfig.core.commonsconfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.apache.commons.io.IOUtils;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
@@ -71,9 +72,20 @@ public class YamlSerializerDeserializer implements
      */
     @Override
     public HierarchicalConfiguration deserialize(InputStream input) throws ConfigurationException {
+        String content;
+        try {
+            content = IOUtils.toString(input);
+        } catch (IOException e) {
+            throw new ConfigurationException("Failed to read from stream.");
+        }
+
+        if (content.isEmpty()) {
+            return new HierarchicalConfiguration();
+        }
+
         Object tree;
         try {
-            tree = yaml.load(input);
+            tree = yaml.load(content);
         } catch (ParserException e) {
             throw new ConfigurationException("Failed to parse input as valid YAML.", e);
         }

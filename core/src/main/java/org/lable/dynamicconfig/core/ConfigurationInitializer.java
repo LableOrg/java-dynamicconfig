@@ -1,10 +1,8 @@
 package org.lable.dynamicconfig.core;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.CombinedConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.*;
 import org.apache.commons.configuration.tree.OverrideCombiner;
+import org.lable.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
 import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
 import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
@@ -54,8 +52,9 @@ public class ConfigurationInitializer {
         desiredSource.configure(sourceConfiguration);
 
         // Create the configuration object with its defaults loaded last. The combiner expects them in that order.
-        final CombinedConfiguration allConfig = new CombinedConfiguration();
-        allConfig.setNodeCombiner(new OverrideCombiner());
+        final CombinedConfiguration allConfig = new CombinedConfiguration(new OverrideCombiner());
+        final ConcurrentConfiguration concurrentConfiguration = new ConcurrentConfiguration(allConfig);
+
         // Add an empty named placeholder for the runtime configuration that will be loaded later on.
         allConfig.addConfiguration(new HierarchicalConfiguration(), "runtime");
         if (defaults != null) {
@@ -67,10 +66,7 @@ public class ConfigurationInitializer {
             @Override
             public void changed(HierarchicalConfiguration fresh) {
                 logger.info("New runtime configuration received.");
-                HierarchicalConfiguration runtimeConfig =
-                        (HierarchicalConfiguration) allConfig.getConfiguration("runtime");
-                runtimeConfig.clear();
-                runtimeConfig.append(fresh);
+                concurrentConfiguration.updateConfiguration("runtime", fresh);
             }
         };
 
@@ -84,7 +80,7 @@ public class ConfigurationInitializer {
         // Listen for future changes in the run-time configuration.
         desiredSource.listen(deserializer, listener);
 
-        return allConfig;
+        return concurrentConfiguration;
     }
 
     static Configuration gatherPropertiesFor(ConfigurationSource desiredSource) {
