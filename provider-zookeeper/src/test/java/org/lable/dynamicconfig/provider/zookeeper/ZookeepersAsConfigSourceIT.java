@@ -142,7 +142,9 @@ public class ZookeepersAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        Configuration configuration = ConfigurationInitializer.configureFromProperties(defaults);
+        Configuration configuration = ConfigurationInitializer.configureFromProperties(
+                defaults, new YamlSerializerDeserializer()
+        );
 
         assertThat(configuration.getString("key"), is("DEFAULT"));
 
