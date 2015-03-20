@@ -1,11 +1,12 @@
 package org.lable.dynamicconfig.core.commonsconfiguration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ArrayNode;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,9 +39,9 @@ public class JsonSerializerTest {
         JsonNode tree = mapper.readTree(new StringReader(output.toString("UTF-8")));
 
         JsonNode nodeType = tree.get("type");
-        assertThat(nodeType.get("unicodeString").getTextValue(), is("€"));
-        assertThat(nodeType.get("booleanFalse").getBooleanValue(), is(false));
-        assertThat(nodeType.get("booleanTrue").getBooleanValue(), is(true));
+        assertThat(nodeType.get("unicodeString").textValue(), is("€"));
+        assertThat(nodeType.get("booleanFalse").booleanValue(), is(false));
+        assertThat(nodeType.get("booleanTrue").booleanValue(), is(true));
         ArrayNode listInt = (ArrayNode) nodeType.get("listOfIntegers");
         assertThat(listInt, instanceOf(ArrayNode.class));
     }
