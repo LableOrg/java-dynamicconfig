@@ -30,7 +30,6 @@ public class FileBasedConfigSourceIT {
         URL testUrl = getClass().getResource("/" + INPUT);
         final String testYaml = testUrl.toURI().getPath();
         FileBasedConfigSource source = new FileBasedConfigSource();
-//        FileBasedConfigSource source = new FileBasedConfigSource(null, testYaml, "ROOT");
         Configuration config = new BaseConfiguration();
         config.setProperty("path", testYaml);
         source.configure(config);
@@ -62,7 +61,6 @@ public class FileBasedConfigSourceIT {
         Configuration config = new BaseConfiguration();
         config.setProperty("path", configFile.getPath());
         source.configure(config);
-//        FileBasedConfigSource source = new FileBasedConfigSource(null, configFile.getPath(), "ROOT");
         HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
 
 
