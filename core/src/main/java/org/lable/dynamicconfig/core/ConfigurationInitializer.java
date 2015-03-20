@@ -4,6 +4,7 @@ import org.apache.commons.configuration.*;
 import org.apache.commons.configuration.tree.OverrideCombiner;
 import org.lable.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
 import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationSerializer;
 import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
 import org.slf4j.Logger;
@@ -22,13 +23,15 @@ public class ConfigurationInitializer {
     /**
      * Common prefix used for all system properties that concern this library.
      */
-    public final static String LIBRARY_PREFIX = "org.lable.dynamicconfig.distributedconfig";
+    public final static String LIBRARY_PREFIX = "org.lable.dynamicconfig";
 
-    public static Configuration configureFromProperties() throws ConfigurationException {
-        return configureFromProperties(null);
+    public static Configuration configureFromProperties(HierarchicalConfigurationDeserializer deserializer)
+            throws ConfigurationException {
+        return configureFromProperties(null, deserializer);
     }
 
-    public static Configuration configureFromProperties(HierarchicalConfiguration defaults)
+    public static Configuration configureFromProperties(HierarchicalConfiguration defaults,
+                                                        HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
         String desiredSourceName = System.getProperty(LIBRARY_PREFIX + ".type");
         if (desiredSourceName == null) {
@@ -70,7 +73,6 @@ public class ConfigurationInitializer {
             }
         };
 
-        HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
         boolean successfullyLoaded = desiredSource.load(deserializer, listener);
 
         if (!successfullyLoaded) {

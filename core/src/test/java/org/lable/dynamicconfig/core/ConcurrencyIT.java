@@ -4,6 +4,7 @@ package org.lable.dynamicconfig.core;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
+import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +27,9 @@ public class ConcurrencyIT {
         System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".file.path", configFile.toAbsolutePath().toString());
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("test", -1);
-        final Configuration configuration = ConfigurationInitializer.configureFromProperties(defaults);
+        final Configuration configuration = ConfigurationInitializer.configureFromProperties(
+                defaults, new YamlSerializerDeserializer()
+        );
 
         final CountDownLatch ready = new CountDownLatch(threadCount + 1);
         final CountDownLatch start = new CountDownLatch(1);
