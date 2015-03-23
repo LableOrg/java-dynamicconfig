@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.lable</groupId>
     <artifactId>common</artifactId>
-    <version>0.12</version>
+    <version>0.13</version>
   </parent>
 
   <groupId>org.lable.dynamicconfig</groupId>
@@ -30,7 +30,7 @@
 
   <properties>
     <zookeeper.version>3.4.6</zookeeper.version>
-    <!--<zookeeper.version>3.4.5-cdh5.1.0</zookeeper.version>-->
+    <commons.configuration.version>1.10</commons.configuration.version>
     <slf4j.version>1.7.10</slf4j.version>
     <log4j.version>2.1</log4j.version>
     <scm.url>scm:git:git@git.lable.org:lable/dynamic-config.git</scm.url>
