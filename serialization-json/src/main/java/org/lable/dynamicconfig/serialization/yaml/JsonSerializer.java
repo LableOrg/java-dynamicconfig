@@ -1,15 +1,20 @@
-package org.lable.dynamicconfig.core.commonsconfiguration;
+package org.lable.dynamicconfig.serialization.yaml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
+import static org.lable.dynamicconfig.core.commonsconfiguration.Objectifier.traverseTreeAndEmit;
 
 /**
  * Serialize {@link HierarchicalConfiguration} instances into a JSON representation.
@@ -24,32 +29,10 @@ public class JsonSerializer implements HierarchicalConfigurationSerializer {
     public void serialize(HierarchicalConfiguration configuration, OutputStream output) throws ConfigurationException {
         StringWriter writer = new StringWriter();
         try {
-            mapper.writeValue(writer, traverseTreeAndSave(configuration.getRootNode()));
+            mapper.writeValue(writer, traverseTreeAndEmit(configuration.getRootNode()));
             output.write(writer.toString().getBytes());
         } catch (IOException e) {
             throw new ConfigurationException(e);
-        }
-    }
-
-    /**
-     * Process a node in the Config tree, and store it with its parent node in an object tree.
-     * <p/>
-     * This method recursively calls itself to walk a Config tree.
-     *
-     * @param parent Parent of the current node, as represented in the Config tree.
-     * @return An object tree.
-     */
-    Object traverseTreeAndSave(ConfigurationNode parent) {
-        if (parent.getChildrenCount() == 0) {
-            return parent.getValue();
-        } else {
-            Map<String, Object> map = new LinkedHashMap<>();
-            for (Object o : parent.getChildren()) {
-                ConfigurationNode child = (ConfigurationNode) o;
-                String nodeName = child.getName();
-                map.put(nodeName, traverseTreeAndSave(child));
-            }
-            return map;
         }
     }
 }

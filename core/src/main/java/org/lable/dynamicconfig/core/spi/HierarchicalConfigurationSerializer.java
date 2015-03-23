@@ -1,4 +1,4 @@
-package org.lable.dynamicconfig.core.commonsconfiguration;
+package org.lable.dynamicconfig.core.spi;
 
 
 import org.apache.commons.configuration.ConfigurationException;

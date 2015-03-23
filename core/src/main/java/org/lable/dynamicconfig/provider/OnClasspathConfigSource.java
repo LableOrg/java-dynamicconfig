@@ -3,7 +3,7 @@ package org.lable.dynamicconfig.provider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.dynamicconfig.core.ConfigurationException;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
 import org.slf4j.Logger;

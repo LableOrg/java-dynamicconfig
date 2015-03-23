@@ -10,7 +10,7 @@ import org.apache.zookeeper.data.Stat;
 import org.lable.dynamicconfig.core.ConfigurationException;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

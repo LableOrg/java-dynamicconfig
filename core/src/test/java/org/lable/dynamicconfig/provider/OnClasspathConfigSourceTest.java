@@ -5,7 +5,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Test;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import java.io.InputStream;
 
@@ -51,7 +51,7 @@ public class OnClasspathConfigSourceTest {
 
         OnClasspathConfigSource source = new OnClasspathConfigSource();
         Configuration config = new BaseConfiguration();
-        config.setProperty("path", "test.yml");
+        config.setProperty("path", "dummy.txt");
         source.configure(config);
         boolean result = source.load(mockLoader, mockListener);
 

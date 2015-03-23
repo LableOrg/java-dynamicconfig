@@ -1,0 +1,23 @@
+# Test YAML file. Don't change this without verifying that all unit and integration tests still work.
+type:
+    listOfIntegers: [1, 2, 3, 0, -1]
+    listOfStrings:
+        - "One"
+        - "Two"
+        - "…"
+    string: "Okay"
+    booleanFalse: false
+    booleanTrue: true
+    unicodeString: "€"
+    quotedString: "1"
+    long: 1000000000000
+tree:
+    branchL1a:
+        branchL2a: {branchL3a: "leaf_a", branchL3b: "leaf_b"}
+        branchL2b:
+            branchL3h: leaf_h
+            branchL3i: >
+                leaf_i
+tables:
+    table:
+        name: y

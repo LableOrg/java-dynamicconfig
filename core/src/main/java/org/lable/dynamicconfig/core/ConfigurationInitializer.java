@@ -3,9 +3,7 @@ package org.lable.dynamicconfig.core;
 import org.apache.commons.configuration.*;
 import org.apache.commons.configuration.tree.OverrideCombiner;
 import org.lable.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationSerializer;
-import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +36,7 @@ public class ConfigurationInitializer {
             throw new ConfigurationException("System property " + LIBRARY_PREFIX + ".type is not set.");
         }
 
-        List<ConfigurationSource> sources = detectServiceProviders();
+        List<ConfigurationSource> sources = detectConfigurationSourceServiceProviders();
         ConfigurationSource desiredSource = null;
         for (ConfigurationSource source : sources) {
             if (source.name().equals(desiredSourceName)) {
@@ -98,10 +96,20 @@ public class ConfigurationInitializer {
         return configuration;
     }
 
-    static List<ConfigurationSource> detectServiceProviders() {
+    static List<ConfigurationSource> detectConfigurationSourceServiceProviders() {
         List<ConfigurationSource> providers = new ArrayList<>();
         ServiceLoader<ConfigurationSource> loader = ServiceLoader.load(ConfigurationSource.class);
         for (ConfigurationSource source : loader) {
+            providers.add(source);
+        }
+        return providers;
+    }
+
+    static List<HierarchicalConfigurationDeserializer> detectDeserializationServiceProviders() {
+        List<HierarchicalConfigurationDeserializer> providers = new ArrayList<>();
+        ServiceLoader<HierarchicalConfigurationDeserializer> loader =
+                ServiceLoader.load(HierarchicalConfigurationDeserializer.class);
+        for (HierarchicalConfigurationDeserializer source : loader) {
             providers.add(source);
         }
         return providers;

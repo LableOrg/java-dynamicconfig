@@ -4,7 +4,7 @@ package org.lable.dynamicconfig.core;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
-import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
+import org.lable.dynamicconfig.serialization.yaml.YamlDeserializer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -15,7 +15,7 @@ public class BasicUseIT {
         System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
         System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
         Configuration configuration = ConfigurationInitializer.configureFromProperties(
-                new YamlSerializerDeserializer()
+                new YamlDeserializer()
         );
 
         assertThat(configuration.getString("type.string"), is("Okay"));
@@ -30,7 +30,7 @@ public class BasicUseIT {
         defaults.setProperty("only.in.defaults", "XXX");
 
         Configuration configuration = ConfigurationInitializer.configureFromProperties(
-                defaults, new YamlSerializerDeserializer()
+                defaults, new YamlDeserializer()
         );
 
         assertThat(configuration.getString("type.string"), is("Okay"));

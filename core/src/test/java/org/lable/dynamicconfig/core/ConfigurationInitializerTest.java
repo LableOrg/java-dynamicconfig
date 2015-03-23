@@ -11,7 +11,7 @@ import static org.junit.Assert.assertThat;
 public class ConfigurationInitializerTest {
     @Test
     public void detectServiceProvidersTest() {
-        List<ConfigurationSource> result = ConfigurationInitializer.detectServiceProviders();
+        List<ConfigurationSource> result = ConfigurationInitializer.detectConfigurationSourceServiceProviders();
 
         assertThat(result.size(), is(2));
         assertThat(result.get(0).name(), is("file"));

@@ -13,8 +13,8 @@ import org.junit.Test;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
 import org.lable.dynamicconfig.core.ConfigurationException;
 import org.lable.dynamicconfig.core.ConfigurationInitializer;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
-import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.serialization.yaml.YamlDeserializer;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class ZookeepersAsConfigSourceIT {
     @Test
     public void testLoad() throws Exception {
         ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
-        HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
+        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
         ArgumentCaptor<HierarchicalConfiguration> argument = ArgumentCaptor.forClass(HierarchicalConfiguration.class);
 
         // Prepare the znode on the ZooKeeper.
@@ -98,7 +98,7 @@ public class ZookeepersAsConfigSourceIT {
         // Initial value. This should not be returned by the listener, but is required to make sure the node exists.
         setData(VALUE_A);
 
-        HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
+        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
 
         // Setup a listener to gather all returned configuration values.
         final List<String> results = new ArrayList<>();
@@ -143,7 +143,7 @@ public class ZookeepersAsConfigSourceIT {
         defaults.setProperty("key", "DEFAULT");
 
         Configuration configuration = ConfigurationInitializer.configureFromProperties(
-                defaults, new YamlSerializerDeserializer()
+                defaults, new YamlDeserializer()
         );
 
         assertThat(configuration.getString("key"), is("DEFAULT"));

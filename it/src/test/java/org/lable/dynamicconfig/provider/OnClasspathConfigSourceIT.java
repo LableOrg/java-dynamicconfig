@@ -6,7 +6,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
 import org.lable.dynamicconfig.core.ConfigurationException;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
-import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
+import org.lable.dynamicconfig.serialization.yaml.YamlDeserializer;
 import org.mockito.ArgumentCaptor;
 
 import static org.hamcrest.core.Is.is;
@@ -26,7 +26,7 @@ public class OnClasspathConfigSourceIT {
         config.setProperty("path", "testConfigOnClasspath.yml");
         source.configure(config);
 
-        boolean result = source.load(new YamlSerializerDeserializer(), mockListener);
+        boolean result = source.load(new YamlDeserializer(), mockListener);
 
         assertThat(result, is(true));
         verify(mockListener).changed(argument.capture());

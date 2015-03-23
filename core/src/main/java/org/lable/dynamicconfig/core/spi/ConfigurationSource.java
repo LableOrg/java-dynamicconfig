@@ -3,7 +3,6 @@ package org.lable.dynamicconfig.core.spi;
 import org.apache.commons.configuration.Configuration;
 import org.lable.dynamicconfig.core.ConfigurationException;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
 
 import java.util.List;
 

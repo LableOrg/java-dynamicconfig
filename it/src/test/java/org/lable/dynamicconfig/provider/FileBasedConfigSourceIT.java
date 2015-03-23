@@ -7,8 +7,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.lable.dynamicconfig.core.ConfigChangeListener;
 import org.lable.dynamicconfig.core.ConfigurationException;
-import org.lable.dynamicconfig.core.commonsconfiguration.HierarchicalConfigurationDeserializer;
-import org.lable.dynamicconfig.core.commonsconfiguration.YamlSerializerDeserializer;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
+import org.lable.dynamicconfig.serialization.yaml.YamlDeserializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class FileBasedConfigSourceIT {
         config.setProperty("path", testYaml);
         source.configure(config);
 
-        HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
+        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
 
         final CountDownLatch latch = new CountDownLatch(1);
         Catcher catcher = new Catcher(latch);
@@ -61,7 +61,7 @@ public class FileBasedConfigSourceIT {
         Configuration config = new BaseConfiguration();
         config.setProperty("path", configFile.getPath());
         source.configure(config);
-        HierarchicalConfigurationDeserializer deserializer = new YamlSerializerDeserializer();
+        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
 
 
         final List<String> results = new ArrayList<>();
