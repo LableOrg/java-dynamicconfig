@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.lable.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>webviewer</artifactId>
-  <version>1.1</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>war</packaging>
 
   <name>Dynamic configuration :: Webviewer</name>
