@@ -1,15 +1,14 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.lable.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <artifactId>webviewer</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>war</packaging>
 
   <name>Dynamic configuration :: Webviewer</name>
@@ -21,9 +20,9 @@
     <apache.tomcat.version>7.0.57</apache.tomcat.version>
     <cargo.plugin.version>1.4.11</cargo.plugin.version>
     <antrun.plugin.version>1.8</antrun.plugin.version>
-    <config.method/>
-    <config.zookeepers/>
-    <config.znode/>
+    <config.method />
+    <config.zookeepers />
+    <config.znode />
   </properties>
 
   <dependencies>
