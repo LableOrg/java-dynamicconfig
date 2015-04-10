@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -43,7 +44,7 @@ public class OnClasspathConfigSource implements ConfigurationSource {
      */
     @Override
     public List<String> systemProperties() {
-        return Arrays.asList("path");
+        return Collections.singletonList("path");
     }
 
     /**

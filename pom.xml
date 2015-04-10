@@ -20,6 +20,7 @@
 
   <modules>
     <module>core</module>
+    <module>servlet-util</module>
     <module>provider-zookeeper</module>
     <module>serialization-json</module>
     <module>serialization-yaml</module>

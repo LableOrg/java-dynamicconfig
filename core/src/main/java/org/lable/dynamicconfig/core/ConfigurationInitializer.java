@@ -1,16 +1,21 @@
 package org.lable.dynamicconfig.core;
 
-import org.apache.commons.configuration.*;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.CombinedConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.OverrideCombiner;
 import org.lable.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
-import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
+import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * Provides methods that can bootstrap configuration providers based on set system properties.
@@ -23,11 +28,29 @@ public class ConfigurationInitializer {
      */
     public final static String LIBRARY_PREFIX = "org.lable.dynamicconfig";
 
+    final static String[] COMMON_PROPERTIES = {"appname"};
+
+    /**
+     * Use system properties to initialize a configuration instance.
+     *
+     * @param deserializer Deserializer used to interpret the language the configuration file is written in.
+     * @return Thread-safe configuration instance.
+     * @throws ConfigurationException
+     */
     public static Configuration configureFromProperties(HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
         return configureFromProperties(null, deserializer);
     }
 
+    /**
+     * Use system properties to initialize a configuration instance.
+     *
+     * @param defaults     Default configuration. Any keys not overridden by the dynamic configuration will remain as
+     *                     set here.
+     * @param deserializer Deserializer used to interpret the language the configuration file is written in.
+     * @return Thread-safe configuration instance.
+     * @throws ConfigurationException
+     */
     public static Configuration configureFromProperties(HierarchicalConfiguration defaults,
                                                         HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
@@ -88,6 +111,12 @@ public class ConfigurationInitializer {
 
         for (String propertyName : desiredSource.systemProperties()) {
             String value = System.getProperty(LIBRARY_PREFIX + "." + desiredSource.name() + "." + propertyName);
+            if (value != null && !value.equals("")) {
+                configuration.setProperty(propertyName, value);
+            }
+        }
+        for (String propertyName : COMMON_PROPERTIES) {
+            String value = System.getProperty(LIBRARY_PREFIX + "." + propertyName);
             if (value != null && !value.equals("")) {
                 configuration.setProperty(propertyName, value);
             }

@@ -7,9 +7,9 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.lable.dynamicconfig.core.ConfigChangeListener;
 import org.lable.dynamicconfig.core.ConfigurationException;
 import org.lable.dynamicconfig.core.spi.ConfigurationSource;
-import org.lable.dynamicconfig.core.ConfigChangeListener;
 import org.lable.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +78,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     public void configure(Configuration configuration) throws ConfigurationException {
         String quorum = configuration.getString("quorum");
         String znode = configuration.getString("znode");
+        String appName = configuration.getString("appname");
 
         if (isBlank(quorum)) {
             throw new ConfigurationException("quorum", "No ZooKeeper quorum specified.");
@@ -88,11 +89,13 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         }
 
         this.quorum = quorum;
-        this.znode = znode;
+        this.znode = combinePath(znode, appName);
     }
 
     /**
-     * {@inheritDoc} <p> When this method is called, it connects to the Zookeeper quorum, and maintains a watch on the
+     * {@inheritDoc}
+     * <p/>
+     * When this method is called, it connects to the Zookeeper quorum, and maintains a watch on the
      * configuration node.
      */
     @Override
@@ -118,7 +121,9 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     }
 
     /**
-     * {@inheritDoc} <p> For the initial loading of the configuration, this class connects to the Zookeeper quorum,
+     * {@inheritDoc}
+     * <p/>
+     * For the initial loading of the configuration, this class connects to the Zookeeper quorum,
      * waits for a successful connection, and then loads the configuration once.
      */
     @Override
@@ -198,6 +203,20 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
             return null;
         }
         return hc;
+    }
+
+    static String combinePath(String znode, String appName) {
+        if (!isBlank(appName)) {
+            if (!znode.substring(znode.length() - 1, znode.length()).equals("/")) {
+                znode += "/";
+            }
+            if (appName.startsWith("/")) {
+                appName = appName.substring(1);
+            }
+            znode += appName;
+        }
+
+        return znode;
     }
 
 }

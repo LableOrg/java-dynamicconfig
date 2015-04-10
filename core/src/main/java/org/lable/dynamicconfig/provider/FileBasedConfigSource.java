@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -46,7 +47,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
      */
     @Override
     public List<String> systemProperties() {
-        return Arrays.asList("path");
+        return Collections.singletonList("path");
     }
 
     /**
