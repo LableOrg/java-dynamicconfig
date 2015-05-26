@@ -72,19 +72,11 @@ public class NodeWatcher implements Watcher, Runnable {
                         zk.getData(path, this, callback, null);
                         break;
                     case None:
+                        registerWatcher(path);
+                        break;
                     case NodeDeleted:
                         logger.error("Our configuration znode was deleted. Waiting for it to be recreated…");
-                        try {
-                            // Register the watcher.
-                            zk.exists(path, this);
-                        } catch (KeeperException.SessionExpiredException e) {
-                            connect();
-                        } catch (KeeperException e) {
-                            logger.error("KeeperException caught, retrying…", e);
-                            waitBeforeRetrying();
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                        }
+                        registerWatcher(path);
                         break;
                 }
                 break;
@@ -125,6 +117,26 @@ public class NodeWatcher implements Watcher, Runnable {
         } catch (IOException e) {
             waitBeforeRetrying();
             connect();
+        }
+    }
+
+    /**
+     * Register the ZooKeeper watcher for a node. If registering it fails {@link #waitBeforeRetrying()} is called
+     * once to prevent hammering.
+     *
+     * @param path Node to watch.
+     */
+    void registerWatcher(String path) {
+        try {
+            // Register the watcher.
+            zk.exists(path, this);
+        } catch (KeeperException.SessionExpiredException e) {
+            connect();
+        } catch (KeeperException e) {
+            logger.error("KeeperException caught, retrying…", e);
+            waitBeforeRetrying();
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         }
     }
 
