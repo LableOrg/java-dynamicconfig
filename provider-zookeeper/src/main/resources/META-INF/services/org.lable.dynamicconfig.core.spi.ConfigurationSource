@@ -1,1 +1,1 @@
-org.lable.dynamicconfig.provider.zookeeper.ZookeepersAsConfigSource
+org.lable.oss.dynamicconfig.provider.zookeeper.ZookeepersAsConfigSource

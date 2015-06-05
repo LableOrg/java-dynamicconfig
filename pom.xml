@@ -2,12 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.lable</groupId>
-    <artifactId>common</artifactId>
-    <version>0.13</version>
+    <groupId>org.lable.oss</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.2</version>
   </parent>
 
-  <groupId>org.lable.dynamicconfig</groupId>
+  <groupId>org.lable.oss.dynamicconfig</groupId>
   <artifactId>dynamicconfig</artifactId>
   <version>1.3-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -24,8 +24,6 @@
     <module>provider-zookeeper</module>
     <module>serialization-json</module>
     <module>serialization-yaml</module>
-    <module>webviewer</module>
-    <module>webviewer-it</module>
     <module>it</module>
   </modules>
 
@@ -55,34 +53,14 @@
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.tomcat.maven</groupId>
-          <artifactId>tomcat7-maven-plugin</artifactId>
-          <version>2.2</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <version>2.2</version>
-          <configuration>
-            <archive>
-              <addMavenDescriptor>false</addMavenDescriptor>
-            </archive>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
     <plugins>
       <plugin>
-        <artifactId>maven-source-plugin</artifactId>
+        <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
       <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
       </plugin>
 
       <plugin>

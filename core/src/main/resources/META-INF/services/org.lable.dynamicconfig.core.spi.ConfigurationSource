@@ -1,2 +1,2 @@
-org.lable.dynamicconfig.provider.FileBasedConfigSource
-org.lable.dynamicconfig.provider.OnClasspathConfigSource
+org.lable.oss.dynamicconfig.provider.FileBasedConfigSource
+org.lable.oss.dynamicconfig.provider.OnClasspathConfigSource
