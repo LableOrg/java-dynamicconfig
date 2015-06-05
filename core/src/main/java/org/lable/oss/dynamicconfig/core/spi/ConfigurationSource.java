@@ -39,21 +39,21 @@ public interface ConfigurationSource {
      *
      * @return Simple name of this configuration source.
      */
-    public String name();
+    String name();
 
     /**
      * A set of all system properties relevant to this configuration source for bootstrapping itself.
      *
      * @return A list of property names, without the common library prefix.
      */
-    public List<String> systemProperties();
+    List<String> systemProperties();
 
     /**
      * Provide configuration parameters.
      *
      * @param configuration Configuration parameters for this implementation.
      */
-    public void configure(Configuration configuration) throws ConfigurationException;
+    void configure(Configuration configuration) throws ConfigurationException;
 
     /**
      * Start listening for changes in the configuration source, and notify a listener of changes in the configuration
@@ -65,7 +65,7 @@ public interface ConfigurationSource {
      * @param deserializer Deserializer that can turn an input stream into a configuration instance.
      * @param listener Listener to inform of changes in the configuration source.
      */
-    public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
+    void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
 
     /**
      * Load configuration from this source once.
@@ -74,5 +74,5 @@ public interface ConfigurationSource {
      * @param listener Listener to notify when the configuration has been loaded.
      * @return True if the configuration was successfully loaded, false on failure.
      */
-    public boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
+    boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
 }

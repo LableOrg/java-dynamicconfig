@@ -15,16 +15,19 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
-import org.apache.commons.configuration.HierarchicalConfiguration;
-
 /**
- * Callback for a changed configuration tree.
+ * Process-local settings for bootstrapping this library.
  */
-public interface ConfigChangeListener {
-    /**
-     * Called when the configuration is mutated.
-     *
-     * @param fresh The new configuration tree.
-     */
-    void changed(HierarchicalConfiguration fresh);
+public enum InstanceLocalSettings {
+    INSTANCE;
+
+    private String name = null;
+
+    public void setAppName(String name) {
+        this.name = name;
+    }
+
+    public String getAppName() {
+        return name;
+    }
 }

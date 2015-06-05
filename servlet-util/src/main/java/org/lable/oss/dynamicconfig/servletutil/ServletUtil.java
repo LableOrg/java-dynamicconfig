@@ -16,6 +16,7 @@
 package org.lable.oss.dynamicconfig.servletutil;
 
 import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
+import org.lable.oss.dynamicconfig.core.InstanceLocalSettings;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -49,9 +50,6 @@ public class ServletUtil {
             contextPath = "ROOT";
         }
 
-        // Only set this property if it is not already configured.
-        if (isBlank(System.getProperty(APPNAME_PROPERTY))) {
-            System.setProperty(APPNAME_PROPERTY, contextPath);
-        }
+        InstanceLocalSettings.INSTANCE.setAppName(contextPath);
     }
 }

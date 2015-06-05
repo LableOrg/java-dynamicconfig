@@ -60,7 +60,7 @@ public class ConcurrentConfiguration implements Configuration {
 
     /*
      * Mutations are forbidden, except through #updateConfiguration(). By disabling modification here,
-     * all Configuration methods implemented left are read-only.
+     * all Configuration methods implemented that remain are read-only.
      */
 
     @Override

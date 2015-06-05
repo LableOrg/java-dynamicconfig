@@ -17,6 +17,7 @@ package org.lable.oss.dynamicconfig.servletutil;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.lable.oss.dynamicconfig.core.InstanceLocalSettings;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -41,7 +42,7 @@ public class ServletUtilTest {
 
         setApplicationNameFromContext(context);
 
-        assertThat(System.getProperty(APPNAME_PROPERTY), is("TEST"));
+        assertThat(InstanceLocalSettings.INSTANCE.getAppName(), is("TEST"));
     }
 
     @Test
@@ -53,6 +54,6 @@ public class ServletUtilTest {
 
         setApplicationNameFromContext(context);
 
-        assertThat(System.getProperty(APPNAME_PROPERTY), is("TEST"));
+        assertThat(InstanceLocalSettings.INSTANCE.getAppName(), is("TEST"));
     }
 }

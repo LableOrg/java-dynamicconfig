@@ -30,8 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-
 /**
  * Provides methods that can bootstrap configuration providers based on set system properties.
  */
@@ -43,7 +41,8 @@ public class ConfigurationInitializer {
      */
     public final static String LIBRARY_PREFIX = "org.lable.oss.dynamicconfig";
 
-    final static String[] COMMON_PROPERTIES = {"appname"};
+    final static String APPNAME_PROPERTY = "appname";
+    final static String[] COMMON_PROPERTIES = {APPNAME_PROPERTY};
 
     /**
      * Use system properties to initialize a configuration instance.
@@ -130,6 +129,15 @@ public class ConfigurationInitializer {
                 configuration.setProperty(propertyName, value);
             }
         }
+
+        // 'appname' can be (and usually is) set locally. It can be overridden by a system property for development
+        // and testing purposes.
+        if (InstanceLocalSettings.INSTANCE.getAppName() != null) {
+            configuration.setProperty(
+                    LIBRARY_PREFIX + "." + APPNAME_PROPERTY,
+                    InstanceLocalSettings.INSTANCE.getAppName());
+        }
+
         for (String propertyName : COMMON_PROPERTIES) {
             String value = System.getProperty(LIBRARY_PREFIX + "." + propertyName);
             if (value != null && !value.equals("")) {
