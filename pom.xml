@@ -35,6 +35,7 @@
     be updated at runtime.
   </description>
   <inceptionYear>2015</inceptionYear>
+  <url>https://github.com/LableOrg/java-dynamicconfig</url>
 
   <modules>
     <module>core</module>
@@ -53,12 +54,29 @@
     <scm.url>scm:git:git@git.lable.org:lable/dynamic-config.git</scm.url>
   </properties>
 
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
   <scm>
-    <connection>${scm.url}</connection>
-    <url>${scm.url}</url>
-    <developerConnection>${scm.url}</developerConnection>
+    <connection>scm:git:git@github.com:LableOrg/java-dynamicconfig.git</connection>
+    <developerConnection>scm:git:git@github.com:LableOrg/java-dynamicconfig.git</developerConnection>
+    <url>https://github.com/LableOrg/java-dynamicconfig</url>
     <tag>HEAD</tag>
   </scm>
+
+  <developers>
+    <developer>
+      <id>jdhoek</id>
+      <name>Jeroen Hoek</name>
+      <email>jeroen.hoek@lable.nl</email>
+      <organization>Lable</organization>
+      <organizationUrl>http://lable.nl</organizationUrl>
+    </developer>
+  </developers>
 
   <dependencyManagement>
     <dependencies>
