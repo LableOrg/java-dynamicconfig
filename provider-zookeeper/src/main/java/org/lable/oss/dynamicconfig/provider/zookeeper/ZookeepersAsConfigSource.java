@@ -17,6 +17,7 @@ package org.lable.oss.dynamicconfig.provider.zookeeper;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -38,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.zookeeper.AsyncCallback.DataCallback;
 import static org.apache.zookeeper.Watcher.Event.KeeperState;
 
@@ -52,8 +54,9 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      */
     static int ZOOKEEPER_TIMEOUT = 10;
 
-    String quorum;
+    String[] quorum;
     String znode;
+    String copyQuorumTo;
 
     /**
      * Construct a new ZookeepersAsConfigSource.
@@ -75,32 +78,43 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      */
     @Override
     public List<String> systemProperties() {
-        return Arrays.asList("quorum", "znode");
+        return Arrays.asList("quorum", "znode", "copy.quorum.to");
     }
 
     /**
      * {@inheritDoc}
      * <p/>
-     * This class expects two parameters:
+     * This class required two parameters to be set in the configuration object passed:
      * <dl>
      *     <dt>quorum
      *     <dd>Comma-separated list of addresses for the Zookeeper quorum.
      *     <dt>znode
      *     <dd>Path to the configuration node.
      * </dl>
+     * Additionally, the following optional parameter may be set:
+     * <dl>
+     *     <dt>copy.quorum.to
+     *     <dd>Copy the ZooKeeper quorum to this configuration parameter to make it available in the configuration
+     *     object loaded by this class.
+     * </dl>
      */
     @Override
     public void configure(Configuration configuration) throws ConfigurationException {
-        String quorum = configuration.getString("quorum");
+        String[] quorum = configuration.getStringArray("quorum");
         String znode = configuration.getString("znode");
+        String copyQuorumTo = configuration.getString("copy.quorum.to");
         String appName = configuration.getString("appname");
 
-        if (isBlank(quorum)) {
+        if (quorum.length == 0) {
             throw new ConfigurationException("quorum", "No ZooKeeper quorum specified.");
         }
 
         if (isBlank(znode)) {
             throw new ConfigurationException("znode", "No znode specified.");
+        }
+
+        if (isNotBlank(copyQuorumTo)) {
+            this.copyQuorumTo = copyQuorumTo;
         }
 
         this.quorum = quorum;
@@ -130,7 +144,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         };
 
         // Launch the node watcher.
-        Thread watcher = new Thread(new NodeWatcher(quorum, callback, znode));
+        Thread watcher = new Thread(new NodeWatcher(StringUtils.join(quorum, ","), callback, znode));
         watcher.setName("ZooKeeper config watcher, node: " + znode);
         watcher.start();
     }
@@ -149,7 +163,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         ZooKeeper zookeeper;
         // Connect to the quorum and wait for the successful connection callback.;
         try {
-            zookeeper = new ZooKeeper(quorum, ZOOKEEPER_TIMEOUT * 1000, new Watcher() {
+            zookeeper = new ZooKeeper(StringUtils.join(quorum, ","), ZOOKEEPER_TIMEOUT * 1000, new Watcher() {
                 @Override
                 public void process(WatchedEvent watchedEvent) {
                     if (watchedEvent.getState() == KeeperState.SyncConnected) {
@@ -159,7 +173,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
                 }
             });
         } catch (IOException e) {
-            logger.error("Failed to open a connection to the Zookeeper quorum: " + quorum, e);
+            logger.error("Failed to open a connection to the Zookeeper quorum: " + StringUtils.join(quorum, ","), e);
             return false;
         }
 
@@ -217,6 +231,12 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
                 new String(raw) + "\n\n" + e.getCause().getMessage());
             return null;
         }
+
+        // If enabled, copy the Zookeeper quorum to the configuration tree.
+        if (copyQuorumTo != null) {
+            hc.setProperty(copyQuorumTo, quorum);
+        }
+
         return hc;
     }
 

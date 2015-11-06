@@ -34,20 +34,23 @@ public class ZookeepersAsConfigSourceTest {
         source.configure(config);
 
         assertThat(source.znode, is("/path/node"));
-        assertThat(source.quorum, is("QUORUM"));
+        assertThat(source.quorum.length, is(1));
+        assertThat(source.quorum[0], is("QUORUM"));
     }
 
     @Test
-    public void testConstructorWithAppName() throws ConfigurationException {
+    public void testConstructorWithAppNameAndQuorumList() throws ConfigurationException {
         ZookeepersAsConfigSource source = new ZookeepersAsConfigSource();
         Configuration config = new BaseConfiguration();
-        config.setProperty("quorum", "QUORUM");
+        config.setProperty("quorum", "zk1,zk2");
         config.setProperty("znode", "/path");
         config.setProperty("appname", "node");
         source.configure(config);
 
         assertThat(source.znode, is("/path/node"));
-        assertThat(source.quorum, is("QUORUM"));
+        assertThat(source.quorum.length, is(2));
+        assertThat(source.quorum[0], is("zk1"));
+        assertThat(source.quorum[1], is("zk2"));
     }
 
     @Test

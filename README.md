@@ -49,6 +49,7 @@ The simplest way to configure Dynamic Config when used from within a web applica
 | org.lable.oss.dynamicconfig.zookeeper.znode | /dynamicconfig |
 | org.lable.oss.dynamicconfig.type | zookeeper |
 | org.lable.oss.dynamicconfig.zookeeper.quorum | zk1,zk2,zk3 |
+| org.lable.oss.dynamicconfig.zookeeper.copy.quorum.to | zookeeper.quorum |
 
 In addition to these properties, Dynamic Config needs to know the name of the specific configuration resource it should load. For a web applaction running in a servlet container such as Apache Tomcat, you can tell Dynamic Config to use the name of the current application context (which usually based on the name of the WAR archive).
 
@@ -66,7 +67,7 @@ public void contextInitialized(ServletContextEvent event) {
 
 ```
 
-Now you can load the configution instance by calling:
+Now you can load the configuration instance by calling:
 
 ```java
 Configuration configuration = ConfigurationInitializer.configureFromProperties(new YamlDeserializer());
