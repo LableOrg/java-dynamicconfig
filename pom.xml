@@ -44,6 +44,7 @@
     <module>serialization-json</module>
     <module>serialization-yaml</module>
     <module>it</module>
+    <module>config-util</module>
   </modules>
 
   <properties>
