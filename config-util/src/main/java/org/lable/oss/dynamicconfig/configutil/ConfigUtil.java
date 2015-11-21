@@ -70,7 +70,7 @@ public class ConfigUtil {
      * @param parent Path to the parent node.
      * @return A string array containing the names of the children.
      */
-    public static List<String> childKeys(Configuration config, String parent) {
+    public static Set<String> childKeys(Configuration config, String parent) {
         if (config == null) throw new IllegalArgumentException("Parameter config may not be null.");
 
         if (parent != null && !parent.isEmpty()) {
@@ -78,7 +78,7 @@ public class ConfigUtil {
         }
 
         Iterator keys = config.getKeys();
-        List<String> list = new ArrayList<String>();
+        Set<String> list = new HashSet<>();
         while (keys.hasNext()) {
             String key = (String) keys.next();
             key = key.split("\\.", 2)[0];
@@ -94,7 +94,7 @@ public class ConfigUtil {
      * @param config Configuration object, may be a subset of the configuration tree.
      * @return A string array containing the names of the children.
      */
-    public static List<String> childKeys(Configuration config) {
+    public static Set<String> childKeys(Configuration config) {
         return childKeys(config, null);
     }
 }

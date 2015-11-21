@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -94,13 +95,14 @@ public class ConfigUtilTest {
         input.addProperty("prop1", "XXX");
         input.addProperty("prop2", "XXX");
         input.addProperty("prop3.deeper", "XXX");
+        input.addProperty("prop3.deeperest", "XXX");
 
-        final List<String> result = childKeys(input);
+        final Set<String> result = childKeys(input);
 
         assertThat(result.size(), is(3));
-        assertThat(result.get(0), is("prop1"));
-        assertThat(result.get(1), is("prop2"));
-        assertThat(result.get(2), is("prop3"));
+        assertThat(result.contains("prop1"), is(true));
+        assertThat(result.contains("prop2"), is(true));
+        assertThat(result.contains("prop3"), is(true));
     }
 
     @Test
@@ -110,10 +112,10 @@ public class ConfigUtilTest {
         input.addProperty("prop2", "XXX");
         input.addProperty("prop3.deeper", "XXX");
 
-        final List<String> result = childKeys(input, "prop3");
+        final Set<String> result = childKeys(input, "prop3");
 
         assertThat(result.size(), is(1));
-        assertThat(result.get(0), is("deeper"));
+        assertThat(result.contains("deeper"), is(true));
     }
 
     @Test
@@ -121,7 +123,7 @@ public class ConfigUtilTest {
         Configuration input = new HierarchicalConfiguration();
         input.addProperty("prop1", "XXX");
 
-        final List<String> result = childKeys(input, "");
+        final Set<String> result = childKeys(input, "");
 
         assertThat(result.contains("prop1"), is(true));
     }
