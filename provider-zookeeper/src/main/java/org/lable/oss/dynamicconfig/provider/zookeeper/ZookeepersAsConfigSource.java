@@ -25,6 +25,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
@@ -103,7 +104,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         String[] quorum = configuration.getStringArray("quorum");
         String znode = configuration.getString("znode");
         String copyQuorumTo = configuration.getString("copy.quorum.to");
-        String appName = configuration.getString("appname");
+        String appName = configuration.getString(ConfigurationInitializer.APPNAME_PROPERTY);
 
         if (quorum.length == 0) {
             throw new ConfigurationException("quorum", "No ZooKeeper quorum specified.");
@@ -111,6 +112,11 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
         if (isBlank(znode)) {
             throw new ConfigurationException("znode", "No znode specified.");
+        }
+
+        if (isBlank(appName)) {
+            throw new ConfigurationException(ConfigurationInitializer.APPNAME_PROPERTY,
+                    "No application name found.");
         }
 
         if (isNotBlank(copyQuorumTo)) {

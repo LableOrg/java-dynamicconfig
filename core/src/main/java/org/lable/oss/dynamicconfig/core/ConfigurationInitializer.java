@@ -41,7 +41,11 @@ public class ConfigurationInitializer {
      */
     public final static String LIBRARY_PREFIX = "org.lable.oss.dynamicconfig";
 
-    final static String APPNAME_PROPERTY = "appname";
+    /**
+     * Name of the property that holds the application name.
+     */
+    public final static String APPNAME_PROPERTY = "appname";
+
     final static String[] COMMON_PROPERTIES = {APPNAME_PROPERTY};
 
     /**
@@ -133,9 +137,7 @@ public class ConfigurationInitializer {
         // 'appname' can be (and usually is) set locally. It can be overridden by a system property for development
         // and testing purposes.
         if (InstanceLocalSettings.INSTANCE.getAppName() != null) {
-            configuration.setProperty(
-                    LIBRARY_PREFIX + "." + APPNAME_PROPERTY,
-                    InstanceLocalSettings.INSTANCE.getAppName());
+            configuration.setProperty(APPNAME_PROPERTY, InstanceLocalSettings.INSTANCE.getAppName());
         }
 
         for (String propertyName : COMMON_PROPERTIES) {

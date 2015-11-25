@@ -40,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.lable.oss.dynamicconfig.core.ConfigurationInitializer.APPNAME_PROPERTY;
+import static org.lable.oss.dynamicconfig.core.ConfigurationInitializer.LIBRARY_PREFIX;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -59,7 +61,8 @@ public class ZookeepersAsConfigSourceIT {
 
         testConfig = new BaseConfiguration();
         testConfig.setProperty("quorum", zookeeperHost);
-        testConfig.setProperty("znode", "/config/test");
+        testConfig.setProperty("znode", "/config");
+        testConfig.setProperty(APPNAME_PROPERTY, "test");
 
         server = new Thread(new ZooKeeperThread(config));
         server.start();
@@ -75,6 +78,7 @@ public class ZookeepersAsConfigSourceIT {
         Configuration config = new BaseConfiguration();
         config.setProperty("quorum", zookeeperHost);
         config.setProperty("znode", "/nope/nope");
+        config.setProperty(APPNAME_PROPERTY, "nope");
         source.configure(config);
 
         boolean result = source.load(mockLoader, mockListener);
@@ -151,9 +155,10 @@ public class ZookeepersAsConfigSourceIT {
     public void viaInitializerTest() throws Exception {
         setData("\n");
 
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "zookeeper");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".zookeeper.znode", "/config/test");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".zookeeper.quorum", zookeeperHost);
+        System.setProperty(LIBRARY_PREFIX + ".type", "zookeeper");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.znode", "/config");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.quorum", zookeeperHost);
+        System.setProperty(LIBRARY_PREFIX + "." + APPNAME_PROPERTY, "test");
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
