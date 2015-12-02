@@ -95,7 +95,7 @@ public class ConfigurationInitializer {
 
         // Create the configuration object with its defaults loaded last. The combiner expects them in that order.
         final CombinedConfiguration allConfig = new CombinedConfiguration(new OverrideCombiner());
-        final ConcurrentConfiguration concurrentConfiguration = new ConcurrentConfiguration(allConfig);
+        final ConcurrentConfiguration concurrentConfiguration = new ConcurrentConfiguration(allConfig, desiredSource);
 
         // Add an empty named placeholder for the runtime configuration that will be loaded later on.
         allConfig.addConfiguration(new HierarchicalConfiguration(), "runtime");

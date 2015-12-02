@@ -18,7 +18,10 @@ package org.lable.oss.dynamicconfig.core.commonsconfiguration;
 import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Iterator;
@@ -31,20 +34,22 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Provides thread safe access to a {@link Configuration} instance.
  */
-public class ConcurrentConfiguration implements Configuration {
+public class ConcurrentConfiguration implements Configuration, Closeable {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
 
     final CombinedConfiguration wrapped;
+    final ConfigurationSource configurationSource;
 
     final static String NO_MODIFICATION_MESSAGE =
             "This configuration class does not permit modification, " +
                     "except through #updateConfiguration(String, Configuration).";
 
-    public ConcurrentConfiguration(CombinedConfiguration wrapped) {
+    public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
         this.wrapped = wrapped;
+        this.configurationSource = configurationSource;
     }
 
     public void updateConfiguration(String name, Configuration newConfiguration) {
@@ -56,6 +61,11 @@ public class ConcurrentConfiguration implements Configuration {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        configurationSource.close();
     }
 
     /*

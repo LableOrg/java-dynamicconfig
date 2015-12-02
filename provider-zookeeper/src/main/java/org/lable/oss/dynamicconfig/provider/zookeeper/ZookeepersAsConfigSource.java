@@ -224,7 +224,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         listener.changed(hc);
         return true;
     }
-    
+
     /**
      * {@inheritDoc}
      */

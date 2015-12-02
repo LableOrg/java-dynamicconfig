@@ -45,6 +45,7 @@
     <module>serialization-yaml</module>
     <module>it</module>
     <module>config-util</module>
+    <module>di</module>
   </modules>
 
   <properties>
