@@ -24,6 +24,7 @@ import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,5 +113,13 @@ public class OnClasspathConfigSource implements ConfigurationSource {
 
         listener.changed(hc);
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() throws IOException {
+        // No-op.
     }
 }

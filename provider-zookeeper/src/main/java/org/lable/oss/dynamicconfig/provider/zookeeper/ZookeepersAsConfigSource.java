@@ -32,12 +32,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
@@ -58,6 +58,9 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     String[] quorum;
     String znode;
     String copyQuorumTo;
+
+    NodeWatcher watcher;
+    ExecutorService executorService;
 
     /**
      * Construct a new ZookeepersAsConfigSource.
@@ -150,9 +153,10 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         };
 
         // Launch the node watcher.
-        Thread watcher = new Thread(new NodeWatcher(StringUtils.join(quorum, ","), callback, znode));
-        watcher.setName("ZooKeeper config watcher, node: " + znode);
-        watcher.start();
+        NodeWatcher watcher = new NodeWatcher(StringUtils.join(quorum, ","), callback, znode);
+        this.watcher = watcher;
+        executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(watcher);
     }
 
     /**
@@ -220,6 +224,15 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         listener.changed(hc);
         return true;
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() throws IOException {
+        watcher.close();
+        executorService.shutdown();
+    }
 
     /**
      * Parse the raw configuration data. This logs the data if parsing fails.
@@ -259,5 +272,4 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
         return znode;
     }
-
 }

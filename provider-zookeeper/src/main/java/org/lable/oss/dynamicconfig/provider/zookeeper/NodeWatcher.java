@@ -19,13 +19,14 @@ import org.apache.zookeeper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Zookeeper node watcher.
  */
-public class NodeWatcher implements Watcher, Runnable {
+public class NodeWatcher implements Watcher, Runnable, Closeable {
     private final static Logger logger = LoggerFactory.getLogger(NodeWatcher.class);
 
     /*
@@ -64,8 +65,20 @@ public class NodeWatcher implements Watcher, Runnable {
             synchronized (this) {
                 wait();
             }
-        } catch (InterruptedException ie) {
-            // Exit.
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        synchronized (this) {
+            try {
+                zk.close();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            notifyAll();
         }
     }
 

@@ -72,8 +72,8 @@ public class FileWatcher implements Runnable {
                 key.reset();
                 key = watchService.take();
             }
-        } catch (InterruptedException ie) {
-            // Exit.
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -110,7 +110,7 @@ public class FileWatcher implements Runnable {
          * @param event    Event type.
          * @param filePath Path of the modified file.
          */
-        public void fileChanged(Event event, Path filePath);
+        void fileChanged(Event event, Path filePath);
     }
 
     /**

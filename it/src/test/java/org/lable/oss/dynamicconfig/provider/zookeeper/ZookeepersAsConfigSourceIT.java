@@ -149,6 +149,14 @@ public class ZookeepersAsConfigSourceIT {
         assertThat(results.get(0), is("BBB"));
         assertThat(results.get(1), is("CCC"));
         assertThat(results.get(2), is("DDD"));
+
+        source.close();
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        setData("{BOGUS_YAML");
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        assertThat(results.size(), is(3));
     }
 
     @Test

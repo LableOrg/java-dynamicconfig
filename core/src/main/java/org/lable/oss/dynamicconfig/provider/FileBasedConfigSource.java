@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -41,6 +43,9 @@ public class FileBasedConfigSource implements ConfigurationSource {
     private static final Logger logger = LoggerFactory.getLogger(FileBasedConfigSource.class);
 
     File config = null;
+
+    Runnable watcher;
+    ExecutorService executorService;
 
     /**
      * Construct a new FileBasedConfigSource.
@@ -128,9 +133,9 @@ public class FileBasedConfigSource implements ConfigurationSource {
         }
 
         // Launch the file watcher.
-        Thread watcher = new Thread(fileWatcher);
-        watcher.setName("File watcher, path: " + configPath);
-        watcher.start();
+        watcher = fileWatcher;
+        executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(fileWatcher);
     }
 
     /**
@@ -152,6 +157,14 @@ public class FileBasedConfigSource implements ConfigurationSource {
 
         listener.changed(hc);
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() throws IOException {
+        executorService.shutdown();
     }
 
     static HierarchicalConfiguration loadConfiguration(File config, HierarchicalConfigurationDeserializer deserializer) {

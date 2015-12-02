@@ -19,6 +19,7 @@ import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 
+import java.io.Closeable;
 import java.util.List;
 
 /**
@@ -31,7 +32,7 @@ import java.util.List;
  *     <li>{@link #listen(HierarchicalConfigurationDeserializer, ConfigChangeListener)}
  * </ul>
  */
-public interface ConfigurationSource {
+public interface ConfigurationSource extends Closeable {
 
     /**
      * The simple name of an implementation of {@link ConfigurationSource} should be unique. It is used to link
