@@ -15,8 +15,8 @@
  */
 package org.lable.oss.dynamicconfig.serialization.yaml;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -53,7 +53,7 @@ public class YamlSerializer implements HierarchicalConfigurationSerializer {
         try {
             output.write(writer.toString().getBytes());
         } catch (IOException e) {
-            throw new ConfigurationException(e);
+            throw new ConfigurationException("IOException caught.", e);
         }
     }
 }

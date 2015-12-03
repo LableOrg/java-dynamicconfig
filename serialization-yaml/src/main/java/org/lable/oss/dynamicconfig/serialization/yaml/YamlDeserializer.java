@@ -15,21 +15,17 @@
  */
 package org.lable.oss.dynamicconfig.serialization.yaml;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.commons.io.IOUtils;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 

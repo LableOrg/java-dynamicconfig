@@ -17,9 +17,9 @@ package org.lable.oss.dynamicconfig.provider;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import java.io.File;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 
 public class FileBasedConfigSourceTest {
 
-    @Test(expected = org.lable.oss.dynamicconfig.core.ConfigurationException.class)
+    @Test(expected = ConfigurationException.class)
     public void testConfigurationNonExistingFile() throws Exception {
         FileBasedConfigSource source = new FileBasedConfigSource();
         Configuration config = new BaseConfiguration();

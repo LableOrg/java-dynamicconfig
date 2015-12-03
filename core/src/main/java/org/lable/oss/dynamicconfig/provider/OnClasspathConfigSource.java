@@ -17,16 +17,15 @@ package org.lable.oss.dynamicconfig.provider;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.lable.oss.dynamicconfig.core.ConfigurationException;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
-import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
+import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,29 +89,26 @@ public class OnClasspathConfigSource implements ConfigurationSource {
      * {@inheritDoc}
      */
     @Override
-    public boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
+    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
+            throws ConfigurationException {
         if (configPath == null) {
-            logger.error("Path is empty. Was #configure called?");
-            return false;
+            throw new ConfigurationException("Path is empty. Was #configure called?");
         }
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         InputStream is =  cl.getResourceAsStream(configPath);
         if (is == null) {
-            logger.error("Could not find " + configPath + " in the classpath.");
-            return false;
+            throw new ConfigurationException("Could not find " + configPath + " in the classpath.");
         }
 
         HierarchicalConfiguration hc;
         try {
             hc = deserializer.deserialize(is);
-        } catch (org.apache.commons.configuration.ConfigurationException e) {
-            logger.error("Failed to parse " + configPath + " found on classpath.", e);
-            return false;
+        } catch (ConfigurationException e) {
+            throw new ConfigurationException("Failed to parse " + configPath + " found on classpath.", e);
         }
 
         listener.changed(hc);
-        return true;
     }
 
     /**

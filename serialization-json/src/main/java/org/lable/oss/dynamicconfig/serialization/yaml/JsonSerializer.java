@@ -16,18 +16,13 @@
 package org.lable.oss.dynamicconfig.serialization.yaml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.lable.oss.dynamicconfig.core.commonsconfiguration.Objectifier.traverseTreeAndEmit;
 
@@ -47,7 +42,7 @@ public class JsonSerializer implements HierarchicalConfigurationSerializer {
             mapper.writeValue(writer, traverseTreeAndEmit(configuration.getRootNode()));
             output.write(writer.toString().getBytes());
         } catch (IOException e) {
-            throw new ConfigurationException(e);
+            throw new ConfigurationException("IOException caught.", e);
         }
     }
 }

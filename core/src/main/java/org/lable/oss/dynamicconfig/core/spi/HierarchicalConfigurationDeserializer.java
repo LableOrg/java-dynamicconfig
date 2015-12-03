@@ -16,8 +16,8 @@
 package org.lable.oss.dynamicconfig.core.spi;
 
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 
 import java.io.InputStream;
 

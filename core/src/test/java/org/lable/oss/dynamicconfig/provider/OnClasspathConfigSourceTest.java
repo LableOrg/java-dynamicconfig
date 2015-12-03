@@ -17,17 +17,16 @@ package org.lable.oss.dynamicconfig.provider;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import java.io.InputStream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class OnClasspathConfigSourceTest {
 
@@ -41,8 +40,8 @@ public class OnClasspathConfigSourceTest {
         source.listen(mockLoader, mockListener);
     }
 
-    @Test
-    public void testLoadNoResource() throws org.lable.oss.dynamicconfig.core.ConfigurationException {
+    @Test(expected = ConfigurationException.class)
+    public void testLoadNoResource() throws ConfigurationException {
         ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
         HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
 
@@ -51,14 +50,11 @@ public class OnClasspathConfigSourceTest {
         config.setProperty("path", "bogusPath");
         source.configure(config);
 
-        boolean result = source.load(mockLoader, mockListener);
-
-        assertThat(result, is(false));
+        source.load(mockLoader, mockListener);
     }
 
-    @Test
-    public void testLoadFailedLoadConfig()
-            throws ConfigurationException, org.lable.oss.dynamicconfig.core.ConfigurationException {
+    @Test(expected = ConfigurationException.class)
+    public void testLoadFailedLoadConfig() throws ConfigurationException {
         ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
         HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
 
@@ -68,9 +64,6 @@ public class OnClasspathConfigSourceTest {
         Configuration config = new BaseConfiguration();
         config.setProperty("path", "dummy.txt");
         source.configure(config);
-        boolean result = source.load(mockLoader, mockListener);
-
-        assertThat(result, is(false));
-        verify(mockLoader, times(1)).deserialize(any(InputStream.class));
+        source.load(mockLoader, mockListener);
     }
 }

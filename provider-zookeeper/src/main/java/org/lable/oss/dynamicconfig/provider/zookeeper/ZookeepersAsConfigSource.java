@@ -32,12 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
@@ -143,7 +145,14 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
             @Override
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
                 if (stat != null) {
-                    HierarchicalConfiguration hc = parseData(deserializer, data);
+                    HierarchicalConfiguration hc = null;
+                    try {
+                        hc = parseData(deserializer, data);
+                    } catch (ConfigurationException e) {
+                        logger.error("Received invalid data from ZooKeeper quorum. I am ignoring it and keeping the " +
+                                "current configuration!", e);
+                        return;
+                    }
                     if (hc != null) {
                         logger.info("Configuration received from Zookeeper quorum. Znode: " + path);
                         listener.changed(hc);
@@ -166,7 +175,8 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      * waits for a successful connection, and then loads the configuration once.
      */
     @Override
-    public boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
+    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
+            throws ConfigurationException {
         /* It's the */
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -183,8 +193,8 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
                 }
             });
         } catch (IOException e) {
-            logger.error("Failed to open a connection to the Zookeeper quorum: " + StringUtils.join(quorum, ","), e);
-            return false;
+            throw new ConfigurationException("Failed to open a connection to the Zookeeper quorum: " +
+                    StringUtils.join(quorum, ","), e);
         }
 
         // Retrieve the configuration data.
@@ -194,20 +204,18 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
             boolean successfulCountDown = latch.await(ZOOKEEPER_TIMEOUT * 1000 + 300, TimeUnit.MILLISECONDS);
             if (!successfulCountDown) {
                 // The latch timed out. This means a connection to the quorum could not be established.
-                logger.error("Zookeeper connection attempt timed out.");
-                return false;
+                throw new ConfigurationException("Zookeeper connection attempt timed out.");
             }
             logger.info("Looking at " + znode + " for configuration data.");
             configData = zookeeper.getData(znode, false, null);
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
-            return false;
+            throw new ConfigurationException("Thread interrupted.");
         } catch (KeeperException e) {
-            logger.error("Problem accessing configuration data through Zookeeper quorum.", e);
-            return false;
+            throw new ConfigurationException("Problem accessing configuration data through Zookeeper quorum.", e);
         } catch (IllegalArgumentException e) {
-            logger.error("Path to configuration data in Zookeeper quorum does not make sense: " + znode, e);
-            return false;
+            throw new ConfigurationException("Path to configuration data in Zookeeper quorum does not make sense: "
+                    + znode, e);
         } finally {
             try {
                 zookeeper.close();
@@ -217,12 +225,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         }
 
         HierarchicalConfiguration hc = parseData(deserializer, configData);
-        if (hc == null) {
-            return false;
-        }
-
         listener.changed(hc);
-        return true;
     }
 
     /**
@@ -240,15 +243,15 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      * @param raw Raw byte data.
      * @return The configuration tree, or null when parsing fails.
      */
-    HierarchicalConfiguration parseData(final HierarchicalConfigurationDeserializer deserializer, byte[] raw) {
+    HierarchicalConfiguration parseData(final HierarchicalConfigurationDeserializer deserializer, byte[] raw)
+            throws ConfigurationException {
         InputStream bis = new ByteArrayInputStream(raw);
         HierarchicalConfiguration hc;
         try {
             hc = deserializer.deserialize(bis);
-        } catch (org.apache.commons.configuration.ConfigurationException e) {
-            logger.error("Failed to parse configuration data retrieved from Zookeeper quorum. Raw data:\n\n" +
-                new String(raw) + "\n\n" + e.getCause().getMessage());
-            return null;
+        } catch (ConfigurationException e) {
+            throw new ConfigurationException("Failed to parse configuration data retrieved from Zookeeper quorum. " +
+                    "Raw data:\n\n" + new String(raw) + "\n\n" + e.getCause().getMessage());
         }
 
         // If enabled, copy the Zookeeper quorum to the configuration tree.

@@ -142,21 +142,19 @@ public class FileBasedConfigSource implements ConfigurationSource {
      * {@inheritDoc}
      */
     @Override
-    public boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
+    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
+            throws ConfigurationException {
         if (config == null) {
-            logger.error("No alternative configuration file found.");
-            return false;
+            throw new ConfigurationException("No alternative configuration file found.");
         }
 
         HierarchicalConfiguration hc = loadConfiguration(config, deserializer);
 
         if (hc == null) {
-            logger.error("Failed to load configuration file.");
-            return false;
+            throw new ConfigurationException("Failed to load configuration file.");
         }
 
         listener.changed(hc);
-        return true;
     }
 
     /**
@@ -180,7 +178,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
         HierarchicalConfiguration hc;
         try {
             hc = deserializer.deserialize(is);
-        } catch (org.apache.commons.configuration.ConfigurationException e) {
+        } catch (ConfigurationException e) {
             logger.error("Failed to parse supplied configuration file.", e);
             return null;
         }

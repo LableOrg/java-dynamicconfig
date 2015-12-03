@@ -53,11 +53,10 @@ public class FileBasedConfigSourceIT {
 
         final CountDownLatch latch = new CountDownLatch(1);
         Catcher catcher = new Catcher(latch);
-        boolean result = source.load(deserializer, catcher);
+        source.load(deserializer, catcher);
         boolean notTimedOut = latch.await(2, TimeUnit.SECONDS);
 
         assertThat("Expected callback wasn't called within a reasonable time.", notTimedOut, is(true));
-        assertThat(result, is(true));
         assertThat(source.config.getName(), is(INPUT));
         assertThat(catcher.caughtConfig.getString("type.unicodeString"), is("€"));
     }

@@ -112,11 +112,7 @@ public class ConfigurationInitializer {
             }
         };
 
-        boolean successfullyLoaded = desiredSource.load(deserializer, listener);
-
-        if (!successfullyLoaded) {
-            throw new ConfigurationException("Failed to load configuration.");
-        }
+        desiredSource.load(deserializer, listener);
 
         // Listen for future changes in the run-time configuration.
         desiredSource.listen(deserializer, listener);

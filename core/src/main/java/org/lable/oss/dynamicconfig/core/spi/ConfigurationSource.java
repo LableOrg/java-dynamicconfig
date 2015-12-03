@@ -16,8 +16,8 @@
 package org.lable.oss.dynamicconfig.core.spi;
 
 import org.apache.commons.configuration.Configuration;
-import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
+import org.lable.oss.dynamicconfig.core.ConfigurationException;
 
 import java.io.Closeable;
 import java.util.List;
@@ -73,7 +73,8 @@ public interface ConfigurationSource extends Closeable {
      *
      * @param deserializer Deserializer that can turn an input stream into a configuration instance.
      * @param listener Listener to notify when the configuration has been loaded.
-     * @return True if the configuration was successfully loaded, false on failure.
+     * @throws ConfigurationException Thrown when loading the configuration fails.
      */
-    boolean load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
+    void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
+            throws ConfigurationException;
 }

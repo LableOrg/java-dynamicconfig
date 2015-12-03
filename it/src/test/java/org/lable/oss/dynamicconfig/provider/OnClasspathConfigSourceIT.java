@@ -41,9 +41,8 @@ public class OnClasspathConfigSourceIT {
         config.setProperty("path", "testConfigOnClasspath.yml");
         source.configure(config);
 
-        boolean result = source.load(new YamlDeserializer(), mockListener);
+        source.load(new YamlDeserializer(), mockListener);
 
-        assertThat(result, is(true));
         verify(mockListener).changed(argument.capture());
         assertThat(argument.getValue().getString("config.string"), is("XXX"));
     }

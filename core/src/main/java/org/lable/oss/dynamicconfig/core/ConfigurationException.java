@@ -16,7 +16,7 @@
 package org.lable.oss.dynamicconfig.core;
 
 /**
- * Indicates that a configuration parameter did not meet expectations.
+ * Indicates a problem with the configuration process.
  */
 public class ConfigurationException extends Exception {
     String parameter;
@@ -30,7 +30,17 @@ public class ConfigurationException extends Exception {
         this.parameter = parameter;
     }
 
+    public ConfigurationException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
+
     public String getParameter() {
         return parameter;
+    }
+
+    @Override
+    public String getMessage() {
+        return super.getMessage() +
+                (getParameter() == null ? "" : "\nThis parameter caused this exception: " + getParameter());
     }
 }

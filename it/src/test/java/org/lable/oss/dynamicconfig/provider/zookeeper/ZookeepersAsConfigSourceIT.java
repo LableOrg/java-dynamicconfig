@@ -68,7 +68,7 @@ public class ZookeepersAsConfigSourceIT {
         server.start();
     }
 
-    @Test
+    @Test(expected = ConfigurationException.class)
     public void testLoadNoNode() throws ConfigurationException {
         ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
         HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
@@ -81,9 +81,7 @@ public class ZookeepersAsConfigSourceIT {
         config.setProperty(APPNAME_PROPERTY, "nope");
         source.configure(config);
 
-        boolean result = source.load(mockLoader, mockListener);
-
-        assertThat(result, is(false));
+        source.load(mockLoader, mockListener);
     }
 
     @Test
@@ -100,9 +98,8 @@ public class ZookeepersAsConfigSourceIT {
         ZookeepersAsConfigSource source = new ZookeepersAsConfigSource();
         source.configure(testConfig);
 
-        boolean result = source.load(deserializer, mockListener);
+        source.load(deserializer, mockListener);
 
-        assertThat(result, is(true));
         verify(mockListener).changed(argument.capture());
         assertThat(argument.getValue().getString("config.string"), is("XXX"));
     }
