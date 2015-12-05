@@ -18,14 +18,13 @@ package org.lable.oss.dynamicconfig.core;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Provider;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.di.ConfigurationDefaults;
 import org.lable.oss.dynamicconfig.di.ConfigurationProvider;
-import org.lable.oss.dynamicconfig.di.ConfigurationWithDefaultsProvider;
+import org.lable.oss.dynamicconfig.di.DynamicConfigModule;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 
 import java.io.Closeable;
@@ -35,29 +34,6 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 
 public class DependencyInjectionIT {
-    @Test
-    public void diProviderTestWithDefaults() {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
-        final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
-        defaults.setProperty("type.string", "Not okay");
-        defaults.setProperty("only.in.defaults", "XXX");
-
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                bind(HierarchicalConfiguration.class).annotatedWith(ConfigurationDefaults.class).toInstance(defaults);
-                bind(HierarchicalConfigurationDeserializer.class).to(YamlDeserializer.class);
-                bind(Configuration.class).toProvider(ConfigurationWithDefaultsProvider.class);
-            }
-        });
-
-        Configuration configuration = injector.getInstance(Configuration.class);
-
-        assertThat(configuration.getString("type.string"), is("Okay"));
-        assertThat(configuration.getString("only.in.defaults"), is("XXX"));
-    }
-
     @Test
     public void diProviderTest() throws IOException {
         System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
@@ -75,6 +51,69 @@ public class DependencyInjectionIT {
 
         assertThat(configuration, is(not(nullValue())));
 
+        ((Closeable) configuration).close();
+    }
+
+    @Test
+    public void diProviderTestWithDefaults() {
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
+        defaults.setProperty("type.string", "Not okay");
+        defaults.setProperty("only.in.defaults", "XXX");
+
+        Injector injector = Guice.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(HierarchicalConfiguration.class).annotatedWith(ConfigurationDefaults.class).toInstance(defaults);
+                bind(HierarchicalConfigurationDeserializer.class).to(YamlDeserializer.class);
+                bind(Configuration.class).toProvider(ConfigurationProvider.class);
+            }
+        });
+
+        Configuration configuration = injector.getInstance(Configuration.class);
+
+        // As set in test.yml:
+        assertThat(configuration.getString("type.string"), is("Okay"));
+        // Overridden in this test:
+        assertThat(configuration.getString("only.in.defaults"), is("XXX"));
+    }
+
+    @Test
+    public void diModuleTest() throws IOException {
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+
+        Injector injector = Guice.createInjector(new DynamicConfigModule());
+
+        Configuration configuration = injector.getInstance(Configuration.class);
+
+        assertThat(configuration, is(not(nullValue())));
+
         ((Closeable)configuration).close();
+    }
+
+    @Test
+    public void diModuleTestWithDefaults() {
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
+        defaults.setProperty("type.string", "Not okay");
+        defaults.setProperty("only.in.defaults", "XXX");
+
+        final Injector injector = Guice.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+                install(new DynamicConfigModule());
+                bind(HierarchicalConfiguration.class).annotatedWith(ConfigurationDefaults.class).toInstance(defaults);
+            }
+        });
+
+        Configuration configuration = injector.getInstance(Configuration.class);
+
+        // As set in test.yml:
+        assertThat(configuration.getString("type.string"), is("Okay"));
+        // Overridden in this test:
+        assertThat(configuration.getString("only.in.defaults"), is("XXX"));
     }
 }

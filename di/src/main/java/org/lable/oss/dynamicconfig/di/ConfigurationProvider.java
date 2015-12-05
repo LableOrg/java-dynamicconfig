@@ -15,34 +15,46 @@
  */
 package org.lable.oss.dynamicconfig.di;
 
+import com.google.inject.Inject;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
-import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
  * Provides a singleton, thread-safe configuration instance by invoking {@link
- * ConfigurationInitializer#configureFromProperties(HierarchicalConfigurationDeserializer)}. It will
- * attempt to load a configuration resource based on the system properties that configure it.
+ * ConfigurationInitializer#configureFromProperties(HierarchicalConfiguration,
+ * HierarchicalConfigurationDeserializer)}. It will attempt to load a configuration resource based on the system
+ * properties that configure it.
+ * <p/>
+ * A default configuration can be specified by binding {@link ConfigurationDefaults} to an instance of
+ * {@link HierarchicalConfiguration}.
  */
 @Singleton
 public class ConfigurationProvider implements Provider<Configuration> {
     final HierarchicalConfigurationDeserializer deserializer;
+    HierarchicalConfiguration defaults;
 
     @Inject
     ConfigurationProvider(HierarchicalConfigurationDeserializer deserializer) {
         this.deserializer = deserializer;
     }
 
+    @Inject(optional = true)
+    public void setDefaults(@ConfigurationDefaults HierarchicalConfiguration defaults) {
+        this.defaults = defaults;
+    }
+
+
     @Override
     public Configuration get() {
         Configuration result;
         try {
-            result = ConfigurationInitializer.configureFromProperties(deserializer);
+            result = ConfigurationInitializer.configureFromProperties(defaults, deserializer);
         } catch (ConfigurationException e) {
             // Treat a failure to bootstrap the configuration as fatal.
             throw new RuntimeException(e);

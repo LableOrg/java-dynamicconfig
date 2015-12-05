@@ -51,6 +51,7 @@
   <properties>
     <zookeeper.version>3.4.6</zookeeper.version>
     <commons.configuration.version>1.10</commons.configuration.version>
+    <guice.version>4.0</guice.version>
     <slf4j.version>1.7.10</slf4j.version>
     <log4j.version>2.1</log4j.version>
     <scm.url>scm:git:git@git.lable.org:lable/dynamic-config.git</scm.url>
