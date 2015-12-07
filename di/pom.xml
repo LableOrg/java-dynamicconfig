@@ -24,7 +24,7 @@
     <version>1.8-SNAPSHOT</version>
   </parent>
 
-  <artifactId>di</artifactId>
+  <artifactId>dynamic-config-di</artifactId>
   <packaging>jar</packaging>
 
   <name>Dynamic configuration :: Dependency Injection</name>
@@ -42,7 +42,7 @@
     </dependency>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig</groupId>
-      <artifactId>core</artifactId>
+      <artifactId>dynamic-config-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

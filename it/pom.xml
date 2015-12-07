@@ -24,7 +24,7 @@
     <version>1.8-SNAPSHOT</version>
   </parent>
 
-  <artifactId>it</artifactId>
+  <artifactId>dynamic-config-it</artifactId>
   <version>1.8-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -34,25 +34,25 @@
     <!-- Testing dependencies. -->
     <dependency>
       <groupId>org.lable.oss.dynamicconfig</groupId>
-      <artifactId>core</artifactId>
+      <artifactId>dynamic-config-core</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig.serialization</groupId>
-      <artifactId>yaml</artifactId>
+      <artifactId>dynamic-config-serialization-yaml</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig.provider</groupId>
-      <artifactId>zookeeper</artifactId>
+      <artifactId>dynamic-config-provider-zookeeper</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig</groupId>
-      <artifactId>di</artifactId>
+      <artifactId>dynamic-config-di</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

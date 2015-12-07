@@ -24,7 +24,7 @@
     <version>1.8-SNAPSHOT</version>
   </parent>
 
-  <artifactId>servlet-util</artifactId>
+  <artifactId>dynamic-config-servlet-util</artifactId>
   <version>1.8-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -33,7 +33,7 @@
   <dependencies>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig</groupId>
-      <artifactId>core</artifactId>
+      <artifactId>dynamic-config-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

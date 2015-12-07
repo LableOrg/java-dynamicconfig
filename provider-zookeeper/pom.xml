@@ -25,7 +25,7 @@
   </parent>
 
   <groupId>org.lable.oss.dynamicconfig.provider</groupId>
-  <artifactId>zookeeper</artifactId>
+  <artifactId>dynamic-config-provider-zookeeper</artifactId>
   <version>1.8-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -34,7 +34,7 @@
   <dependencies>
     <dependency>
       <groupId>org.lable.oss.dynamicconfig</groupId>
-      <artifactId>core</artifactId>
+      <artifactId>dynamic-config-core</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
