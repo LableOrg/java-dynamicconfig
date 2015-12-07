@@ -19,7 +19,10 @@ import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.io.Closeable;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -35,6 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Provides thread safe access to a {@link Configuration} instance.
  */
 public class ConcurrentConfiguration implements Configuration, Closeable {
+    private final Logger logger = LoggerFactory.getLogger(ConcurrentConfiguration.class);
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
@@ -50,6 +54,7 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
         this.wrapped = wrapped;
         this.configurationSource = configurationSource;
+        logger.info("Dynamic Configuration instance created.");
     }
 
     public void updateConfiguration(String name, Configuration newConfiguration) {
@@ -63,8 +68,16 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
         }
     }
 
+    /**
+     * Close this configuration instance. The {@link ConfigurationSource} backing it will be closed as well. Call this
+     * when you are completely done with this instance; usually in your application tear-down.
+     *
+     * @throws IOException Declared by {@link Closeable#close()}.
+     */
+    @PreDestroy
     @Override
     public void close() throws IOException {
+        logger.info("Closing Dynamic Configuration instance.");
         configurationSource.close();
     }
 

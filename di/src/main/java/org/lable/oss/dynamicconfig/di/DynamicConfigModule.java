@@ -41,15 +41,6 @@ public class DynamicConfigModule extends AbstractModule {
         bind(Configuration.class).toProvider(ConfigurationProvider.class).in(Singleton.class);
     }
 
-    @PreDestroy
-    public void shutdown() throws IOException {
-        logger.info("Shutting down Dynamic Configuration.");
-        Configuration configuration = getProvider(Configuration.class).get();
-        if (Closeable.class.isAssignableFrom(configuration.getClass())) {
-            ((Closeable)configuration).close();
-        }
-    }
-
     @Provides
     @Singleton
     public HierarchicalConfigurationDeserializer provideDeserializer() throws ConfigurationException {

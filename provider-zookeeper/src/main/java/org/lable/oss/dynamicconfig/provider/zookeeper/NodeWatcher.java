@@ -44,6 +44,8 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
     private int retryCounter;
     private int retryWait;
 
+    State state = State.STARTING;
+
     /**
      * Construct a new NodeWatcher.
      *
@@ -56,6 +58,7 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
         this.callback = callback;
         this.path = path;
         resetRetryCounters();
+        state = State.LIVE;
         connect();
     }
 
@@ -73,6 +76,7 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
     @Override
     public void close() throws IOException {
         synchronized (this) {
+            state = State.CLOSED;
             try {
                 zk.close();
             } catch (InterruptedException e) {
@@ -84,6 +88,8 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
 
     @Override
     public void process(WatchedEvent watchedEvent) {
+        if (state != State.LIVE) return;
+
         Event.KeeperState state = watchedEvent.getState();
         Event.EventType type = watchedEvent.getType();
 
@@ -129,6 +135,8 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
      * Connect to the Zookeeper quorum and create a new Zookeeper instance.
      */
     void connect() {
+        if (state != State.LIVE) return;
+
         logger.debug("Connecting to ZooKeeper Quorum.");
         if (zk != null) {
             try {
@@ -194,5 +202,11 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
     void resetRetryCounters() {
         retryCounter = 0;
         retryWait = 10;
+    }
+
+    public enum State {
+        STARTING,
+        LIVE,
+        CLOSED
     }
 }

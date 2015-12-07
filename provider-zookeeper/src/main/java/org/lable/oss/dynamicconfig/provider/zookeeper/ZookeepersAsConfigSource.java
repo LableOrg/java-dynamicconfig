@@ -234,7 +234,12 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     @Override
     public void close() throws IOException {
         watcher.close();
-        executorService.shutdown();
+        executorService.shutdownNow();
+        try {
+            executorService.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
