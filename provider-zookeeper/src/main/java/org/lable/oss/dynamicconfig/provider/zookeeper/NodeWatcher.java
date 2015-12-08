@@ -75,6 +75,8 @@ public class NodeWatcher implements Watcher, Runnable, Closeable {
 
     @Override
     public void close() throws IOException {
+        if (state == State.CLOSED) return;
+
         synchronized (this) {
             state = State.CLOSED;
             try {
