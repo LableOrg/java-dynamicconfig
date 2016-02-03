@@ -40,6 +40,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ConcurrentConfiguration implements Configuration, Closeable {
     private final Logger logger = LoggerFactory.getLogger(ConcurrentConfiguration.class);
 
+    public static final String MODIFICATION_TIMESTAMP = "dc.last-modified-at";
+
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
@@ -54,6 +56,7 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
         this.wrapped = wrapped;
         this.configurationSource = configurationSource;
+        markAsModified();
         logger.info("Dynamic Configuration instance created.");
     }
 
@@ -63,9 +66,15 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
             AbstractConfiguration runtimeConfig = (AbstractConfiguration) wrapped.getConfiguration(name);
             runtimeConfig.clear();
             runtimeConfig.append(newConfiguration);
+            // Mark the time of modification.
+            markAsModified();
         } finally {
             writeLock.unlock();
         }
+    }
+
+    void markAsModified() {
+        wrapped.setProperty(MODIFICATION_TIMESTAMP, System.nanoTime());
     }
 
     /**

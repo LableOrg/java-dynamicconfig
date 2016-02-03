@@ -25,6 +25,7 @@ import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.lable.oss.dynamicconfig.ConfigurationMonitor;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
@@ -154,6 +155,39 @@ public class ZookeepersAsConfigSourceIT {
         TimeUnit.MILLISECONDS.sleep(300);
 
         assertThat(results.size(), is(3));
+    }
+
+    @Test
+    public void configurationMonitorTest() throws Exception {
+        setData("\n");
+
+        System.setProperty(LIBRARY_PREFIX + ".type", "zookeeper");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.znode", "/config");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.quorum", zookeeperHost);
+        System.setProperty(LIBRARY_PREFIX + "." + APPNAME_PROPERTY, "test");
+        HierarchicalConfiguration defaults = new HierarchicalConfiguration();
+        defaults.setProperty("key", "DEFAULT");
+
+        Configuration configuration = ConfigurationInitializer.configureFromProperties(
+                defaults, new YamlDeserializer()
+        );
+
+        ConfigurationMonitor monitor = ConfigurationMonitor.monitor(configuration);
+
+        assertThat(monitor.modifiedSinceLastCall(), is(true));
+        assertThat(configuration.getString("key"), is("DEFAULT"));
+
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+
+        setData("key: AAA");
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        assertThat(monitor.modifiedSinceLastCall(), is(true));
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+        assertThat(configuration.getString("key"), is("AAA"));
     }
 
     @Test
