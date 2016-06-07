@@ -49,6 +49,7 @@
   </modules>
 
   <properties>
+    <java.language.level>1.8</java.language.level>
     <zookeeper.version>3.4.6</zookeeper.version>
     <commons.configuration.version>1.10</commons.configuration.version>
     <guice.version>4.0</guice.version>
