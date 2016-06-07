@@ -27,7 +27,10 @@ import org.lable.oss.dynamicconfig.core.commonsconfiguration.ConcurrentConfigura
  * This class provides a way to increase efficiency of code that uses data from the configuration in computationally
  * demanding situations. Instead of recomputing this data for each call, or cashing it indefinitely, this monitor can
  * be used to determine if the configuration changed at all, and perform any operations only when this is the case.
+ *
+ * @deprecated Use {@link Precomputed} instead.
  */
+@Deprecated
 public class ConfigurationMonitor {
     final Configuration configuration;
     long timeOfLastCall;

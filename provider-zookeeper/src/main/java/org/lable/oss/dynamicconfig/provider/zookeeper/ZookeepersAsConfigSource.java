@@ -145,7 +145,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
             @Override
             public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
                 if (stat != null) {
-                    HierarchicalConfiguration hc = null;
+                    HierarchicalConfiguration hc;
                     try {
                         hc = parseData(deserializer, data);
                     } catch (ConfigurationException e) {
