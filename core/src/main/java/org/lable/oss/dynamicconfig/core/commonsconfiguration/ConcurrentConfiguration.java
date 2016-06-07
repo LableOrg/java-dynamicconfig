@@ -51,7 +51,7 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
 
     final static String NO_MODIFICATION_MESSAGE =
             "This configuration class does not permit modification, " +
-                    "except through #updateConfiguration(String, Configuration).";
+            "except through #updateConfiguration(String, Configuration).";
 
     public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
         this.wrapped = wrapped;

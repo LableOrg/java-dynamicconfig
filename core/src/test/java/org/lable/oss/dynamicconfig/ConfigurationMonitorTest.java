@@ -16,14 +16,20 @@
 package org.lable.oss.dynamicconfig;
 
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.tree.OverrideCombiner;
 import org.junit.Test;
+import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class ConfigurationMonitorTest {
     @Test
@@ -50,6 +56,31 @@ public class ConfigurationMonitorTest {
         assertThat(monitor.modifiedSinceLastCall(), is(false));
 
         config.setProperty(ConcurrentConfiguration.MODIFICATION_TIMESTAMP, System.nanoTime());
+        TimeUnit.MILLISECONDS.sleep(50);
+
+        assertThat(monitor.modifiedSinceLastCall(), is(true));
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+    }
+
+    @Test
+    public void monitorTestWithConcurrentConfiguration() throws InterruptedException {
+        final CombinedConfiguration allConfig = new CombinedConfiguration(new OverrideCombiner());
+        allConfig.addConfiguration(new HierarchicalConfiguration(), "runtime");
+        final ConcurrentConfiguration configuration =
+                new ConcurrentConfiguration(allConfig, mock(ConfigurationSource.class));
+
+        ConfigurationMonitor monitor = ConfigurationMonitor.monitor(configuration);
+
+        assertThat(monitor.modifiedSinceLastCall(), is(true));
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+
+        TimeUnit.MILLISECONDS.sleep(50);
+        assertThat(monitor.modifiedSinceLastCall(), is(false));
+
+        HierarchicalConfiguration conf = new HierarchicalConfiguration();
+        conf.setProperty("test", "XXX");
+        configuration.updateConfiguration("runtime", conf);
+
         TimeUnit.MILLISECONDS.sleep(50);
 
         assertThat(monitor.modifiedSinceLastCall(), is(true));
