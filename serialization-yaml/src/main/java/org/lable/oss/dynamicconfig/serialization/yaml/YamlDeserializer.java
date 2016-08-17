@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,7 +72,7 @@ public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
 
     /**
      * Process a node in the object tree, and store it with its parent node in the Config tree.
-     * <p/>
+     * <p>
      * This method recursively calls itself to walk an object tree.
      *
      * @param parent Parent of the current node, as represented in the Config tree.

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,7 +72,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * Expects a parameter "path" containing the path to the configuration file, relative to the classpath.
      */
     @Override

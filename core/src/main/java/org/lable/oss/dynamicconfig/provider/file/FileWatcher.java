@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -115,7 +115,7 @@ public class FileWatcher implements Runnable {
 
     /**
      * File modification events.
-     * <p/>
+     * <p>
      * These map to the file created, deleted, and modified events in {@link WatchEvent.Kind}.
      */
     public enum Event {
