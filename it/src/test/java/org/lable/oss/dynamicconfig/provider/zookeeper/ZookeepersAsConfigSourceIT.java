@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -222,7 +222,6 @@ public class ZookeepersAsConfigSourceIT {
      * Set the testing znode's content to a value. Create the znode if necessary.
      *
      * @param value Value for the znode.
-     * @throws Exception Thrown when something goes wrong with the operations on the local Zookeeper.
      */
     private void setData(String value) throws Exception {
         ZooKeeper zookeeper = connect();

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,7 +89,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * This class required two parameters to be set in the configuration object passed:
      * <dl>
      *     <dt>quorum
@@ -134,7 +134,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * When this method is called, it connects to the Zookeeper quorum, and maintains a watch on the
      * configuration node.
      */
@@ -170,7 +170,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
-     * <p/>
+     * <p>
      * For the initial loading of the configuration, this class connects to the Zookeeper quorum,
      * waits for a successful connection, and then loads the configuration once.
      */

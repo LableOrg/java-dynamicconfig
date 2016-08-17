@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Lable (info@lable.nl)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import javax.inject.Singleton;
  * ConfigurationInitializer#configureFromProperties(HierarchicalConfiguration,
  * HierarchicalConfigurationDeserializer)}. It will attempt to load a configuration resource based on the system
  * properties that configure it.
- * <p/>
+ * <p>
  * A default configuration can be specified by binding {@link ConfigurationDefaults} to an instance of
  * {@link HierarchicalConfiguration}.
  */
