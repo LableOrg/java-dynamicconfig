@@ -25,7 +25,7 @@ import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.lable.oss.dynamicconfig.ConfigurationMonitor;
+import org.lable.oss.dynamicconfig.Precomputed;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -172,22 +173,33 @@ public class ZookeepersAsConfigSourceIT {
                 defaults, new YamlDeserializer()
         );
 
-        ConfigurationMonitor monitor = ConfigurationMonitor.monitor(configuration);
+        final AtomicInteger count = new AtomicInteger(0);
+        Precomputed<String> precomputed = Precomputed.monitorByUpdate(
+                configuration,
+                config -> {
+                    count.incrementAndGet();
+                    return config.getString("key");
+                }
+        );
 
-        assertThat(monitor.modifiedSinceLastCall(), is(true));
+        assertThat(precomputed.get(), is("DEFAULT"));
+        assertThat(count.get(), is(1));
         assertThat(configuration.getString("key"), is("DEFAULT"));
 
         TimeUnit.MILLISECONDS.sleep(300);
 
-        assertThat(monitor.modifiedSinceLastCall(), is(false));
-        assertThat(monitor.modifiedSinceLastCall(), is(false));
+        assertThat(precomputed.get(), is("DEFAULT"));
+        assertThat(count.get(), is(1));
 
         setData("key: AAA");
         TimeUnit.MILLISECONDS.sleep(300);
 
-        assertThat(monitor.modifiedSinceLastCall(), is(true));
-        assertThat(monitor.modifiedSinceLastCall(), is(false));
+        assertThat(count.get(), is(1));
         assertThat(configuration.getString("key"), is("AAA"));
+        assertThat(precomputed.get(), is("AAA"));
+        assertThat(count.get(), is(2));
+        assertThat(precomputed.get(), is("AAA"));
+        assertThat(count.get(), is(2));
     }
 
     @Test
