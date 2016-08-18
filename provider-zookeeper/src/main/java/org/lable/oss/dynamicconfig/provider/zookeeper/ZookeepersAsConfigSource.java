@@ -55,7 +55,7 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     /**
      * Wait this long, in seconds, before the connection attempt to the Zookeeper quorum should time out.
      */
-    static int ZOOKEEPER_TIMEOUT = 10;
+    static final int ZOOKEEPER_TIMEOUT = 10;
 
     String[] quorum;
     String znode;
@@ -141,22 +141,19 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     @Override
     public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
         // Act on changed data.
-        DataCallback callback = new DataCallback() {
-            @Override
-            public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-                if (stat != null) {
-                    HierarchicalConfiguration hc;
-                    try {
-                        hc = parseData(deserializer, data);
-                    } catch (ConfigurationException e) {
-                        logger.error("Received invalid data from ZooKeeper quorum. I am ignoring it and keeping the " +
-                                "current configuration!", e);
-                        return;
-                    }
-                    if (hc != null) {
-                        logger.info("Configuration received from Zookeeper quorum. Znode: " + path);
-                        listener.changed(hc);
-                    }
+        DataCallback callback = (rc, path, ctx, data, stat) -> {
+            if (stat != null) {
+                HierarchicalConfiguration hc;
+                try {
+                    hc = parseData(deserializer, data);
+                } catch (ConfigurationException e) {
+                    logger.error("Received invalid data from ZooKeeper quorum. I am ignoring it and keeping the " +
+                            "current configuration!", e);
+                    return;
+                }
+                if (hc != null) {
+                    logger.info("Configuration received from Zookeeper quorum. Znode: " + path);
+                    listener.changed(hc);
                 }
             }
         };
@@ -183,13 +180,10 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         ZooKeeper zookeeper;
         // Connect to the quorum and wait for the successful connection callback.;
         try {
-            zookeeper = new ZooKeeper(StringUtils.join(quorum, ","), ZOOKEEPER_TIMEOUT * 1000, new Watcher() {
-                @Override
-                public void process(WatchedEvent watchedEvent) {
-                    if (watchedEvent.getState() == KeeperState.SyncConnected) {
-                        // Signal that the Zookeeper connection is established.
-                        latch.countDown();
-                    }
+            zookeeper = new ZooKeeper(StringUtils.join(quorum, ","), ZOOKEEPER_TIMEOUT * 1000, watchedEvent -> {
+                if (watchedEvent.getState() == KeeperState.SyncConnected) {
+                    // Signal that the Zookeeper connection is established.
+                    latch.countDown();
                 }
             });
         } catch (IOException e) {

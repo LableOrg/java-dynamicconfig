@@ -54,44 +54,38 @@ public class ConcurrencyIT {
 
         for (int i = 0; i < threadCount; i++) {
             final Integer number = 10 + i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    ready.countDown();
-                    try {
-                        result.put(number, 0L);
-                        start.await();
-                        while (System.currentTimeMillis() < stopTime) {
-                            System.out.println(configuration.getLong("test"));
-                            result.put(number, result.get(number) + 1);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        fail(e.getMessage());
-                    }
-                    done.countDown();
-                }
-            }, String.valueOf(number)).start();
-        }
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                long count = 1;
+            new Thread(() -> {
                 ready.countDown();
                 try {
+                    result.put(number, 0L);
                     start.await();
                     while (System.currentTimeMillis() < stopTime) {
-                        String contents = "test: " + count + "\n";
-                        Files.write(configFile, contents.getBytes());
-                        count++;
-                        Thread.sleep(10);
+                        System.out.println(configuration.getLong("test"));
+                        result.put(number, result.get(number) + 1);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                     fail(e.getMessage());
                 }
                 done.countDown();
+            }, String.valueOf(number)).start();
+        }
+
+        new Thread(() -> {
+            long count = 1;
+            ready.countDown();
+            try {
+                start.await();
+                while (System.currentTimeMillis() < stopTime) {
+                    String contents = "test: " + count + "\n";
+                    Files.write(configFile, contents.getBytes());
+                    count++;
+                    Thread.sleep(10);
+                }
+            } catch (Exception e) {
+                fail(e.getMessage());
             }
+            done.countDown();
         }, "setter").start();
 
         ready.await();

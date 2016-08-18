@@ -55,9 +55,9 @@ public class YamlDeserializerTest {
             assertThat(o, instanceOf(String.class));
         }
         assertThat(list.size(), is(3));
-        assertThat((String) list.get(0), is("One"));
-        assertThat((String) list.get(1), is("Two"));
-        assertThat((String) list.get(2), is("…"));
+        assertThat(list.get(0), is("One"));
+        assertThat(list.get(1), is("Two"));
+        assertThat(list.get(2), is("…"));
 
         assertThat(config.getBoolean("type.booleanFalse"), is(false));
         assertThat(config.getBoolean("type.booleanTrue"), is(true));
@@ -67,8 +67,8 @@ public class YamlDeserializerTest {
             assertThat(o, instanceOf(Integer.class));
         }
         assertThat(list.size(), is(5));
-        assertThat((Integer) list.get(0), is(1));
-        assertThat((Integer) list.get(4), is(-1));
+        assertThat(list.get(0), is(1));
+        assertThat(list.get(4), is(-1));
 
         assertThat(config.getLong("type.long"), is(1000000000000L));
 

@@ -67,19 +67,4 @@ public class YamlSerializerTest {
         // Verify that the data was imported correctly again on the second pass.
         assertThat(configuration1.getString("type.string"), is(configuration2.getString("type.string")));
     }
-
-    @Test
-    public void testSaveFromConf() throws ConfigurationException, IOException {
-        HierarchicalConfigurationSerializer serializer = new YamlSerializer();
-        HierarchicalConfiguration configuration = new HierarchicalConfiguration();
-        configuration.setProperty("type.unicodeString", "€");
-        configuration.setProperty("type.booleanFalse", false);
-        configuration.setProperty("type.booleanTrue", true);
-        configuration.setProperty("type.list", Arrays.asList("1", "2", "3"));
-
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        serializer.serialize(configuration, output);
-        String yaml = IOUtils.toString(new StringReader(output.toString("UTF-8")));
-//        JsonNode tree = mapper.readTree(json);
-    }
 }

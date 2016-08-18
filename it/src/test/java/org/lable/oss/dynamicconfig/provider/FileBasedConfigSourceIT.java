@@ -79,12 +79,7 @@ public class FileBasedConfigSourceIT {
 
 
         final List<String> results = new ArrayList<>();
-        source.listen(deserializer, new ConfigChangeListener() {
-            @Override
-            public void changed(HierarchicalConfiguration fresh) {
-                results.add(fresh.getString("key"));
-            }
-        });
+        source.listen(deserializer, fresh -> results.add(fresh.getString("key")));
 
         // Sleep a little bit between file modification to ensure we have a testable sequence of events.
         TimeUnit.MILLISECONDS.sleep(200);

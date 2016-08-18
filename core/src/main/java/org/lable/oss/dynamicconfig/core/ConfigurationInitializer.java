@@ -53,7 +53,7 @@ public class ConfigurationInitializer {
      *
      * @param deserializer Deserializer used to interpret the language the configuration file is written in.
      * @return Thread-safe configuration instance.
-     * @throws ConfigurationException
+     * @throws ConfigurationException Thrown when the required system properties are not set.
      */
     public static Configuration configureFromProperties(HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
@@ -67,7 +67,7 @@ public class ConfigurationInitializer {
      *                     set here.
      * @param deserializer Deserializer used to interpret the language the configuration file is written in.
      * @return Thread-safe configuration instance.
-     * @throws ConfigurationException
+     * @throws ConfigurationException Thrown when the required system properties are not set.
      */
     public static Configuration configureFromProperties(HierarchicalConfiguration defaults,
                                                         HierarchicalConfigurationDeserializer deserializer)
@@ -104,12 +104,9 @@ public class ConfigurationInitializer {
         }
 
         // Listens to changes in the configuration source and updates the configuration tree.
-        ConfigChangeListener listener = new ConfigChangeListener() {
-            @Override
-            public void changed(HierarchicalConfiguration fresh) {
-                logger.info("New runtime configuration received.");
-                concurrentConfiguration.updateConfiguration("runtime", fresh);
-            }
+        ConfigChangeListener listener = fresh -> {
+            logger.info("New runtime configuration received.");
+            concurrentConfiguration.updateConfiguration("runtime", fresh);
         };
 
         desiredSource.load(deserializer, listener);

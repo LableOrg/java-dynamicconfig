@@ -120,12 +120,7 @@ public class ZookeepersAsConfigSourceIT {
 
         // Setup a listener to gather all returned configuration values.
         final List<String> results = new ArrayList<>();
-        ConfigChangeListener listener = new ConfigChangeListener() {
-            @Override
-            public void changed(HierarchicalConfiguration fresh) {
-                results.add(fresh.getString("key"));
-            }
-        };
+        ConfigChangeListener listener = fresh -> results.add(fresh.getString("key"));
 
         ZookeepersAsConfigSource source = new ZookeepersAsConfigSource();
         source.configure(testConfig);
@@ -269,13 +264,10 @@ public class ZookeepersAsConfigSourceIT {
 
         ZooKeeper zookeeper;
         // Connect to the quorum and wait for the successful connection callback.
-        zookeeper = new ZooKeeper(zookeeperHost, 10000, new Watcher() {
-            @Override
-            public void process(WatchedEvent watchedEvent) {
-                if (watchedEvent.getState() == Event.KeeperState.SyncConnected) {
-                    // Signal that the Zookeeper connection is established.
-                    latch.countDown();
-                }
+        zookeeper = new ZooKeeper(zookeeperHost, 10000, watchedEvent -> {
+            if (watchedEvent.getState() == Watcher.Event.KeeperState.SyncConnected) {
+                // Signal that the Zookeeper connection is established.
+                latch.countDown();
             }
         });
 

@@ -21,8 +21,6 @@ import org.lable.oss.dynamicconfig.core.InstanceLocalSettings;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-
 /**
  * Convenience methods for working with dynamic config from a servlet environment.
  */

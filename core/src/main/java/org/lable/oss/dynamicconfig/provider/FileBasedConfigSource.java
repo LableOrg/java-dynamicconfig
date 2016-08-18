@@ -19,15 +19,14 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
+import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.provider.file.FileWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -99,27 +98,24 @@ public class FileBasedConfigSource implements ConfigurationSource {
     public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
         Path configPath = config.toPath();
 
-        FileWatcher.Callback callback = new FileWatcher.Callback() {
-            @Override
-            public void fileChanged(FileWatcher.Event event, Path filePath) {
-                HierarchicalConfiguration hc = null;
-                switch (event) {
-                    case FILE_MODIFIED:
-                        logFileModified(filePath);
-                        hc = loadConfiguration(filePath.toFile(), deserializer);
-                        break;
-                    case FILE_CREATED:
-                        logFileCreated(filePath);
-                        // There is no need to reload the configuration after FILE_CREATED, because FILE_MODIFIED
-                        // will be raised right after it.
-                        break;
-                    case FILE_DELETED:
-                        logFileDeleted(filePath);
-                        break;
-                }
-                if (hc != null) {
-                    listener.changed(hc);
-                }
+        FileWatcher.Callback callback = (event, filePath) -> {
+            HierarchicalConfiguration hc = null;
+            switch (event) {
+                case FILE_MODIFIED:
+                    logFileModified(filePath);
+                    hc = loadConfiguration(filePath.toFile(), deserializer);
+                    break;
+                case FILE_CREATED:
+                    logFileCreated(filePath);
+                    // There is no need to reload the configuration after FILE_CREATED, because FILE_MODIFIED
+                    // will be raised right after it.
+                    break;
+                case FILE_DELETED:
+                    logFileDeleted(filePath);
+                    break;
+            }
+            if (hc != null) {
+                listener.changed(hc);
             }
         };
 

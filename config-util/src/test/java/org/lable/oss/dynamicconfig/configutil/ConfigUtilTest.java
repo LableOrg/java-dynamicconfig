@@ -19,12 +19,11 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.lable.oss.dynamicconfig.configutil.ConfigUtil.childKeys;
 import static org.lable.oss.dynamicconfig.configutil.ConfigUtil.childMap;
 

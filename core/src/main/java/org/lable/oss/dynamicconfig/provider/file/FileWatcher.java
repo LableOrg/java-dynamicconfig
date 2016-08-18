@@ -62,13 +62,14 @@ public class FileWatcher implements Runnable {
             WatchKey key = watchService.take();
             // Poll the watch service for file modification events.
             while (key != null) {
-                for (WatchEvent event : key.pollEvents())
-                    if (isThisOurTargetFile(event, filePath)) {
-                        Event eventType = Event.eventFromWatchEventKind(event.kind());
-                        if (eventType != null) {
-                            callback.fileChanged(eventType, filePath);
-                        }
-                    }
+                key.pollEvents().stream()
+                        .filter(event -> isThisOurTargetFile(event, filePath))
+                        .forEach(event -> {
+                            Event eventType = Event.eventFromWatchEventKind(event.kind());
+                            if (eventType != null) {
+                                callback.fileChanged(eventType, filePath);
+                            }
+                        });
                 key.reset();
                 key = watchService.take();
             }
