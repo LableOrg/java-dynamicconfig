@@ -18,9 +18,7 @@ package org.lable.oss.dynamicconfig;
 import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.commonsconfiguration.ConcurrentConfiguration;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Lazy caching container for objects derived from a {@link Configuration} instance based on parameters that rarely
@@ -37,25 +35,25 @@ import java.util.Objects;
 public class Precomputed<T> {
     final Configuration configuration;
     final Precomputer<T> precomputer;
-    final boolean updateOnChange;
-    final Map<String, Object> monitoredKeys;
+    final boolean updateOnAnyChange;
+    final Map<String, ConfigSubTree> monitoredKeys;
 
     T precomputedValue;
     long timeOfLastUpdate;
 
     Precomputed(Configuration configuration,
                 Precomputer<T> precomputer,
-                boolean updateOnChange,
+                boolean updateOnAnyChange,
                 String... monitoredKeys) {
 
         this.configuration = configuration;
         this.precomputer = precomputer;
-        this.updateOnChange = updateOnChange;
+        this.updateOnAnyChange = updateOnAnyChange;
         this.monitoredKeys = new HashMap<>();
 
         for (String monitoredKey : monitoredKeys) {
             if (monitoredKey == null) throw new IllegalArgumentException("Monitored keys cannot be null.");
-            this.monitoredKeys.put(monitoredKey, configuration.getProperty(monitoredKey));
+            this.monitoredKeys.put(monitoredKey, ConfigSubTree.forPrefix(configuration, monitoredKey));
         }
 
         updateValue();
@@ -68,7 +66,8 @@ public class Precomputed<T> {
      * @param configuration Configuration to monitor.
      * @param precomputer   The computation that creates the cached value.
      * @param monitoredKeys Keys of the configuration parameters that will be compared to values they held the last
-     *                      time {@link #get()} was called.
+     *                      time {@link #get()} was called. These may be prefixes of configuration keys; the
+     *                      configuration subtree as a whole will then be monitored.
      * @param <T>           Type of the value held.
      * @return The {@link Precomputed} instance.
      */
@@ -106,33 +105,44 @@ public class Precomputed<T> {
      * @return The result of the computation.
      */
     public T get() {
-        if (updateNeeded()) {
+        Optional<Map<String, ConfigSubTree>> optionalConfigState = newConfigurationStateIfUpdateNeeded();
+        if (optionalConfigState.isPresent()) {
+            // Reflect the current state of the monitored configuration.
+            monitoredKeys.replaceAll((key, configSubTree) -> optionalConfigState.get().get(key));
             updateValue();
         }
+
         return precomputedValue;
     }
 
     void updateValue() {
         precomputedValue = precomputer.compute(configuration);
-        // Reflect the current state of the monitored configuration.
-        for (Map.Entry<String, Object> entry : monitoredKeys.entrySet()) {
-            monitoredKeys.put(entry.getKey(), configuration.getProperty(entry.getKey()));
-        }
         timeOfLastUpdate = System.nanoTime();
     }
 
-    boolean updateNeeded() {
+    Optional<Map<String, ConfigSubTree>> newConfigurationStateIfUpdateNeeded() {
         // No need to check all monitored values if the configuration was not updated.
-        if (!wasConfigUpdatedSinceLastCheck()) return false;
-        if (updateOnChange) return true;
+        if (!wasConfigUpdatedSinceLastCheck()) return Optional.empty();
 
-        for (Map.Entry<String, Object> entry : monitoredKeys.entrySet()) {
-            Object configValue = configuration.getProperty(entry.getKey());
-            // An update is needed; at least one of the monitored values differs from before.
-            if (!Objects.equals(configValue, entry.getValue())) return true;
+        Map<String, ConfigSubTree> newConfigurationState = new HashMap<>();
+        for (String key : monitoredKeys.keySet()) {
+            newConfigurationState.put(key, ConfigSubTree.forPrefix(configuration, key));
         }
 
-        return false;
+        if (updateOnAnyChange) {
+            // When the Precomputed was instructed to update if *anything* in the configuration changes.
+            return Optional.of(newConfigurationState);
+        } else {
+            for (Map.Entry<String, ConfigSubTree> entry : monitoredKeys.entrySet()) {
+                ConfigSubTree oldConfigSubTree = entry.getValue();
+                if (!oldConfigSubTree.equals(newConfigurationState.get(entry.getKey()))) {
+                    // An update is needed; at least one of the monitored values differs from before.
+                    return Optional.of(newConfigurationState);
+                }
+            }
+        }
+
+        return Optional.empty();
     }
 
     boolean wasConfigUpdatedSinceLastCheck() {
@@ -154,5 +164,61 @@ public class Precomputed<T> {
          * @return The computed value.
          */
         T compute(Configuration configuration);
+    }
+
+    /**
+     * Represent the configuration values for a certain configuration key prefix. The main purpose if this class is
+     * to efficiently ascertain whether or not any part of a configuration subtree has changed.
+     */
+    static class ConfigSubTree {
+        private final String path;
+        Map<String, Object> tree;
+
+        private ConfigSubTree(String path, Map<String, Object> tree) {
+            this.path = path;
+            this.tree = tree;
+        }
+
+        public static ConfigSubTree forPrefix(Configuration configuration, String path) {
+            Map<String, Object> tree = new HashMap<>();
+            configuration.getKeys(path).forEachRemaining(
+                    key -> tree.put(key, configuration.getProperty(key))
+            );
+            return new ConfigSubTree(path, tree);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(path, tree);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof ConfigSubTree)) return false;
+
+            ConfigSubTree that = (ConfigSubTree) other;
+
+            // Check if the prefix is the same.
+            if (!Objects.equals(this.path, that.path)) return false;
+
+            // First check if the amount of keys stores matches.
+            if (this.tree.size() != that.tree.size()) return false;
+
+            // Then check if the same keys are stored.
+            Iterator<String> thisTreeKeys = this.tree.keySet().iterator();
+            Iterator<String> thatTreeKeys = that.tree.keySet().iterator();
+            for (int i = 0; i < tree.size(); i++) {
+                if (!thisTreeKeys.next().equals(thatTreeKeys.next())) return false;
+            }
+
+            // Finally, compare values.
+            Iterator<Map.Entry<String, Object>> thisTreeValues = this.tree.entrySet().iterator();
+            Iterator<Map.Entry<String, Object>> thatTreeValues = that.tree.entrySet().iterator();
+            for (int i = 0; i < tree.size(); i++) {
+                if (!Objects.equals(thisTreeValues.next().getValue(), thatTreeValues.next().getValue())) return false;
+            }
+
+            return true;
+        }
     }
 }
