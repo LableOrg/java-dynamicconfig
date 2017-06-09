@@ -43,9 +43,12 @@ public class ServletUtil {
      */
     public static void setApplicationNameFromContext(ServletContext context) {
         String contextPath = context.getContextPath();
-        if (contextPath.equals("")) {
+        if (contextPath.isEmpty()) {
             // The empty string signifies the root context.
             contextPath = "ROOT";
+        } else if (contextPath.startsWith("/")) {
+            // Strip the leading / if any.
+            contextPath = contextPath.substring(1);
         }
 
         InstanceLocalSettings.INSTANCE.setAppName(contextPath);
