@@ -16,6 +16,7 @@
 package org.lable.oss.dynamicconfig.serialization.yaml;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
@@ -36,8 +37,18 @@ public class JsonSerializer implements HierarchicalConfigurationSerializer {
      * {@inheritDoc}
      */
     @Override
-    public void serialize(HierarchicalConfiguration configuration, OutputStream output) throws ConfigurationException {
+    public void serialize(HierarchicalConfiguration configuration, OutputStream output, boolean humanReadable)
+            throws ConfigurationException {
         StringWriter writer = new StringWriter();
+        if (humanReadable) {
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        } else {
+            mapper.disable(SerializationFeature.INDENT_OUTPUT);
+        }
+
+//        mapper.enable(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS);
+//        mapper.disable(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED);
+
         try {
             mapper.writeValue(writer, traverseTreeAndEmit(configuration.getRootNode()));
             output.write(writer.toString().getBytes());

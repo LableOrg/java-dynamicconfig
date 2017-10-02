@@ -47,7 +47,9 @@ public class YamlSerializer implements HierarchicalConfigurationSerializer {
      * {@inheritDoc}
      */
     @Override
-    public void serialize(HierarchicalConfiguration configuration, OutputStream output) throws ConfigurationException {
+    public void serialize(HierarchicalConfiguration configuration, OutputStream output, boolean humanReadable)
+            throws ConfigurationException {
+        // Ignore the humanReadable flag; YAML is human-readable by default. :)
         StringWriter writer = new StringWriter();
         yaml.dump(traverseTreeAndEmit(configuration.getRootNode()), writer);
         try {

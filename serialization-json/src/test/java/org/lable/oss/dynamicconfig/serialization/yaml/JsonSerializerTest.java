@@ -47,7 +47,7 @@ public class JsonSerializerTest {
         configuration.setProperty("type.list", Arrays.asList("1", "2", "3"));
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        serializer.serialize(configuration, output);
+        serializer.serialize(configuration, output, false);
         String json = IOUtils.toString(new StringReader(output.toString("UTF-8")));
         JsonNode tree = mapper.readTree(json);
 
@@ -57,5 +57,25 @@ public class JsonSerializerTest {
         assertThat(nodeType.get("booleanTrue").booleanValue(), is(true));
         ArrayNode listString = (ArrayNode) nodeType.get("list");
         assertThat(listString, instanceOf(ArrayNode.class));
+
+        assertThat(json.contains("\n"), is(false));
+    }
+
+    @Test
+    public void testFormatting() throws ConfigurationException, IOException {
+        HierarchicalConfigurationSerializer serializer = new JsonSerializer();
+        HierarchicalConfiguration configuration = new HierarchicalConfiguration();
+        configuration.setProperty("type.unicodeString", "€");
+        configuration.setProperty("type.booleanFalse", false);
+        configuration.setProperty("type.booleanTrue", true);
+        configuration.setProperty("type.list", Arrays.asList("1"));
+
+        System.out.println(configuration.getProperty("type.list").getClass().getCanonicalName());
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        serializer.serialize(configuration, output, true);
+        String json = IOUtils.toString(new StringReader(output.toString("UTF-8")));
+
+        assertThat(json.contains("\n"), is(true));
     }
 }

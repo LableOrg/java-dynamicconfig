@@ -30,7 +30,21 @@ public interface HierarchicalConfigurationSerializer {
      *
      * @param configuration Configuration instance.
      * @param output Output stream where the serialized data will be written to.
+     * @param humanReadable Optimize the output for human readability (e.g., apply formatting).
      * @throws ConfigurationException Thrown when serialization fails.
      */
-    void serialize(HierarchicalConfiguration configuration, OutputStream output) throws ConfigurationException;
+    void serialize(HierarchicalConfiguration configuration, OutputStream output, boolean humanReadable)
+            throws ConfigurationException;
+
+    /**
+     * Serialize a {@link HierarchicalConfiguration} class instance into its binary representation.
+     *
+     * @param configuration Configuration instance.
+     * @param output Output stream where the serialized data will be written to.
+     * @throws ConfigurationException Thrown when serialization fails.
+     */
+    default void serialize(HierarchicalConfiguration configuration, OutputStream output)
+            throws ConfigurationException {
+        serialize(configuration, output, false);
+    }
 }
