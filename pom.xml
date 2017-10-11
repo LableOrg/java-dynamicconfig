@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.lable.oss</groupId>
     <artifactId>parent</artifactId>
-    <version>1.7</version>
+    <version>1.9</version>
   </parent>
 
   <groupId>org.lable.oss.dynamicconfig</groupId>
@@ -54,6 +54,7 @@
     <commons.configuration.version>1.10</commons.configuration.version>
     <guice.version>4.0</guice.version>
     <jackson.version>2.7.1</jackson.version>
+    <hamcrest.optional>1.0</hamcrest.optional>
     <slf4j.version>1.7.10</slf4j.version>
     <log4j.version>2.1</log4j.version>
     <scm.url>scm:git:git@git.lable.org:lable/dynamic-config.git</scm.url>
@@ -82,6 +83,15 @@
       <organizationUrl>http://lable.nl</organizationUrl>
     </developer>
   </developers>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.github.npathai</groupId>
+      <artifactId>hamcrest-optional</artifactId>
+      <version>${hamcrest.optional}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <dependencyManagement>
     <dependencies>

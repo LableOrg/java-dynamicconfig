@@ -36,8 +36,8 @@ import static org.junit.Assert.assertThat;
 public class DependencyInjectionIT {
     @Test
     public void diProviderTest() throws IOException {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
 
         Injector injector = Guice.createInjector(new AbstractModule() {
             @Override
@@ -56,8 +56,8 @@ public class DependencyInjectionIT {
 
     @Test
     public void diProviderTestWithDefaults() {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");
@@ -81,8 +81,8 @@ public class DependencyInjectionIT {
 
     @Test
     public void diModuleTest() throws IOException {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
 
         Injector injector = Guice.createInjector(new DynamicConfigModule());
 
@@ -95,8 +95,8 @@ public class DependencyInjectionIT {
 
     @Test
     public void diModuleTestWithDefaults() {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");

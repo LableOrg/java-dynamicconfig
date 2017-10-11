@@ -1,0 +1,7 @@
+extends: base
+
+tree:
+    branch-a: !include 'i1'
+    branch-b:
+      - 1
+      - 2

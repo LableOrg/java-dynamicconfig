@@ -15,7 +15,6 @@
  */
 package org.lable.oss.dynamicconfig.core.commonsconfiguration;
 
-import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
@@ -33,15 +32,18 @@ import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 /**
- * Provides thread safe access to a {@link Configuration} instance.
+ * Provides thread safe access to a {@link CombinedConfiguration} instance.
  */
 public class ConcurrentConfiguration implements Configuration, Closeable {
     private final Logger logger = LoggerFactory.getLogger(ConcurrentConfiguration.class);
 
     public static final String MODIFICATION_TIMESTAMP = "dc.last-modified-at";
 
+    // This lock allows for multiple concurrent readers, but if a write-lock is acquired no other threads can read or
+    // write until the lock is released.
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock readLock = lock.readLock();
     private final Lock writeLock = lock.writeLock();
@@ -56,16 +58,17 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
         this.wrapped = wrapped;
         this.configurationSource = configurationSource;
-        markAsModified();
         logger.info("Dynamic Configuration instance created.");
     }
 
-    public void updateConfiguration(String name, Configuration newConfiguration) {
+    public ConcurrentConfiguration(CombinedConfiguration wrapped) {
+        this(wrapped, null);
+    }
+
+    public void withConfiguration(Consumer<CombinedConfiguration> consumer) {
         writeLock.lock();
         try {
-            AbstractConfiguration runtimeConfig = (AbstractConfiguration) wrapped.getConfiguration(name);
-            runtimeConfig.clear();
-            runtimeConfig.append(newConfiguration);
+            consumer.accept(wrapped);
             // Mark the time of modification.
             markAsModified();
         } finally {
@@ -87,7 +90,9 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     @Override
     public void close() throws IOException {
         logger.info("Closing Dynamic Configuration instance.");
-        configurationSource.close();
+        if (configurationSource != null) {
+            configurationSource.close();
+        }
     }
 
     /*

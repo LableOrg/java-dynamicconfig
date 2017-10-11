@@ -34,6 +34,10 @@ public class ConfigurationException extends Exception {
         super(message, throwable);
     }
 
+    public ConfigurationException(Throwable throwable) {
+        super(throwable);
+    }
+
     public String getParameter() {
         return parameter;
     }

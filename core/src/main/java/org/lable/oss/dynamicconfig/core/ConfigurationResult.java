@@ -15,23 +15,41 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
-import org.apache.commons.configuration.Configuration;
-import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
+import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Result of a successful reading of a configuration source.
+ */
 public class ConfigurationResult {
-    private final Configuration configuration;
-    private final ConfigurationSource configurationSource;
+    private final HierarchicalConfiguration configuration;
+    private final List<IncludeReference> includeReferences;
 
-    public ConfigurationResult(Configuration configuration, ConfigurationSource configurationSource) {
+    public ConfigurationResult(HierarchicalConfiguration configuration,
+                               List<IncludeReference> includeReferences) {
         this.configuration = configuration;
-        this.configurationSource = configurationSource;
+        this.includeReferences = includeReferences == null ? new ArrayList<>() : includeReferences;
     }
 
-    public Configuration getConfiguration() {
+    /**
+     * Get the configuration tree loaded.
+     *
+     * @return a {@link HierarchicalConfiguration} instance.
+     */
+    public HierarchicalConfiguration getConfiguration() {
         return configuration;
     }
 
-    public ConfigurationSource getConfigurationSource() {
-        return configurationSource;
+    /**
+     * Get the list of references to other configuration parts, if the {@link HierarchicalConfigurationDeserializer}
+     * used supports it (if it doesn't, an empty list is returned).
+     *
+     * @return A list of references.
+     */
+    public List<IncludeReference> getIncludeReferences() {
+        return includeReferences;
     }
 }

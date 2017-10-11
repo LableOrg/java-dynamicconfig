@@ -15,16 +15,18 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
-import org.apache.commons.configuration.HierarchicalConfiguration;
+import java.io.InputStream;
 
 /**
  * Callback for a changed configuration tree.
  */
+@FunctionalInterface
 public interface ConfigChangeListener {
     /**
-     * Called when the configuration is mutated.
+     * Called when a configuration part is mutated.
      *
-     * @param fresh The new configuration tree.
+     * @param name        Name of the configuration part.
+     * @param inputStream Input stream containing the changed data.
      */
-    void changed(HierarchicalConfiguration fresh);
+    void changed(String name, InputStream inputStream) throws ConfigurationException;
 }

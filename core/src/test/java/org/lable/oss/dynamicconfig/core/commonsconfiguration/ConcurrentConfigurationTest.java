@@ -17,11 +17,14 @@ package org.lable.oss.dynamicconfig.core.commonsconfiguration;
 
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.tree.OverrideCombiner;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.mockito.Mockito.*;
 
@@ -135,5 +138,66 @@ public class ConcurrentConfigurationTest {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
         Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
         concurrentConfiguration.clear();
+    }
+
+    @Test
+    public void test() {
+        HierarchicalConfiguration include = new HierarchicalConfiguration();
+        include.setProperty("fruits", Arrays.asList("banana", "apple", "cherry"));
+        include.setProperty("veg", Arrays.asList("cucumber", "hamster"));
+
+
+        HierarchicalConfiguration main = new HierarchicalConfiguration();
+        main.setProperty("tree.a.fruits", "xxx");
+
+        final CombinedConfiguration allConfig = new CombinedConfiguration(new OverrideCombiner());
+
+        allConfig.addConfiguration(main, "/");
+        allConfig.addConfiguration(include, "1", "tree.a");
+        allConfig.addConfiguration(include, "2", "tree.b");
+
+        String[] fruit = allConfig.getStringArray("tree.b.fruits");
+        for (String s : fruit) {
+            System.out.println(s);
+        }
+
+        include.setProperty("fruits", Collections.singletonList("orange"));
+
+        fruit = allConfig.getStringArray("tree.b.fruits");
+        for (String s : fruit) {
+            System.out.println(s);
+        }
+    }
+
+    @Test
+    public void modifyConfigurationTest() {
+        CombinedConfiguration allConfig = new CombinedConfiguration(new OverrideCombiner());
+        HierarchicalConfiguration confA = new HierarchicalConfiguration();
+        HierarchicalConfiguration confB = new HierarchicalConfiguration();
+
+        confA.setProperty("a.a", 1);
+        confB.setProperty("a.a", 2);
+
+        allConfig.addConfiguration(confA, "a");
+        allConfig.addConfiguration(confB, "b");
+        allConfig.addConfiguration(confB, "d", "b.b");
+        allConfig.addConfiguration(confB, "c", "c.c");
+
+        System.out.println(allConfig.getInt("a.a"));
+        System.out.println(allConfig.getInt("b.b.a.a"));
+        System.out.println(allConfig.getInt("c.c.a.a"));
+
+        ConcurrentConfiguration concurrentConfiguration = new ConcurrentConfiguration(allConfig);
+
+        System.out.println(concurrentConfiguration.getInt("a.a"));
+
+        concurrentConfiguration.withConfiguration(cc -> {
+            cc.clear();
+            cc.addConfiguration(confB, "b");
+            cc.addConfiguration(confA, "a");
+        });
+
+        System.out.println(concurrentConfiguration.getInt("a.a"));
+
     }
 }

@@ -19,86 +19,108 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
- * A file monitoring runnable that watches a single file for modifications using {@link WatchService}.
+ * A file monitoring runnable that watches selected files for modifications using {@link WatchService}.
  * <p>
  * Normally, {@link WatchService} watches all files in a directory for a number of event types. This class provides a
- * way to monitor only the file created, deleted, and modified events for a single specific file.
+ * way to monitor only the file created, deleted, and modified events for a specific set of files.
  */
 public class FileWatcher implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(FileWatcher.class);
 
     private final WatchService watchService;
-    private final Path filePath;
     private final Callback callback;
+    private final Path dirPath;
+    private final Set<Path> monitoredFiles;
+    private State state = State.RUNNING;
 
     /**
      * Construct a new FileWatcher.
      *
-     * @param callback Callback to call when the file is modified.
-     * @param filePath Path to the file to watch.
+     * @param dirPath  Path to the base directory to watch.
      * @throws IOException Thrown when the {@link WatchService} cannot be acquired.
      */
-    public FileWatcher(Callback callback, Path filePath) throws IOException {
-        this.filePath = filePath;
+    public FileWatcher(Callback callback, Path dirPath) throws IOException {
         this.callback = callback;
+        this.dirPath = dirPath;
+        this.monitoredFiles = new HashSet<>();
 
-        Path dirContainingFile = filePath.getParent();
-        watchService = dirContainingFile.getFileSystem().newWatchService();
-        dirContainingFile.register(watchService, ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE);
+        watchService = dirPath.getFileSystem().newWatchService();
+        dirPath.register(watchService, ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE);
+    }
+
+    public synchronized void listen(Path filePath) {
+        logger.info("Started listening to file for {} changes.", filePath);
+        this.monitoredFiles.add(filePath);
+    }
+
+    public synchronized void stopListening(Path filePath) {
+        this.monitoredFiles.remove(filePath);
     }
 
     @Override
     public void run() {
-        logger.info("Starting file watcher for " + filePath);
+        logger.info("Starting file watcher for {}.", dirPath);
         try {
             WatchKey key = watchService.take();
             // Poll the watch service for file modification events.
-            while (key != null) {
+            while (state == State.RUNNING && key != null) {
+                // (Usually) prevent receiving two separate ENTRY_MODIFY events: file modified
+                // and file access time updated. Instead, receive one ENTRY_MODIFY event with two counts.
+                //
+                // Cf.: https://stackoverflow.com/a/25221600/1641860
+                Thread.sleep(50);
+
                 key.pollEvents().stream()
-                        .filter(event -> isThisOurTargetFile(event, filePath))
-                        .forEach(event -> {
-                            Event eventType = Event.eventFromWatchEventKind(event.kind());
+                        // Ignore all events that are not 'Path' (file/dir) modifications.
+                        .filter(event -> event.kind().type() == Path.class)
+                        // Now it is safe to cast to WatchEvent<Path> instead of WatchEvent<?>.
+                        .map(event -> {
+                            @SuppressWarnings("unchecked")
+                            WatchEvent<Path> pathEvent = (WatchEvent<Path>) event;
+                            return pathEvent;
+                        })
+                        // Ignore files we're not interested in.
+                        .filter(pathEvent -> isThisOneOfOurTargetFiles(pathEvent, monitoredFiles))
+                        .forEach(pathEvent -> {
+                            Event eventType = Event.eventFromWatchEventKind(pathEvent.kind());
                             if (eventType != null) {
-                                callback.fileChanged(eventType, filePath);
+                                callback.fileChanged(eventType, pathEvent.context());
                             }
                         });
                 key.reset();
                 key = watchService.take();
             }
+        } catch (ClosedWatchServiceException e) {
+            // Shutting down the watcher. We're done.
+            logger.info("Stopping file watcher for {}.", dirPath);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public void close() throws IOException {
+        state = State.SHUTTING_DOWN;
+        watchService.close();
     }
 
     /**
      * Java's {@link WatchService} can't watch a single file, only directories and all files in it.
      * This method checks if the event returned belongs to the file we are interested in.
      *
-     * @param event File watcher event.
+     * @param event          File watcher event.
+     * @param monitoredFiles Files we are interested in (relative to the directory monitored).
      * @return True if the event was fired for the file we are watching.
      */
-    static boolean isThisOurTargetFile(WatchEvent event, Path configPath) {
-        // All contexts returned are Path instances for create, delete, and modify.
-        Object context = event.context();
-        if (context != null && context instanceof Path) {
-            Path relativePath = (Path) context;
-            Path dirContainingConfig = configPath.getParent();
-            Path fullPath = dirContainingConfig.resolve(relativePath);
-            // We are only interested in changes to the configuration file,
-            // not in any other files in the watched directory.
-            if (fullPath.equals(configPath)) {
-                return true;
-            }
-        }
-        return false;
+    static boolean isThisOneOfOurTargetFiles(WatchEvent<Path> event, Set<Path> monitoredFiles) {
+        Path relativePath = event.context();
+        return monitoredFiles.contains(relativePath);
     }
 
     /**
@@ -146,5 +168,10 @@ public class FileWatcher implements Runnable {
                     return null;
             }
         }
+    }
+
+    enum State {
+        RUNNING,
+        SHUTTING_DOWN
     }
 }

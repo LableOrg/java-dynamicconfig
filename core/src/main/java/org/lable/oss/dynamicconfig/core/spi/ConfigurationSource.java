@@ -20,16 +20,18 @@ import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 
 import java.io.Closeable;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Service provider interface for a source of configuration information.
  * <p>
- * The general contract of this interface is that its methods are called in this order:
+ * The general contract of this interface is that {@link #configure(Configuration, Configuration, ConfigChangeListener)}
+ * is called before the two primary methods:
  * <ul>
- *     <li>{@link #configure(Configuration)}
- *     <li>{@link #load(HierarchicalConfigurationDeserializer, ConfigChangeListener)}
- *     <li>{@link #listen(HierarchicalConfigurationDeserializer, ConfigChangeListener)}
+ * <li>{@link #load(String)}
+ * <li>{@link #listen(String)}
  * </ul>
  */
 public interface ConfigurationSource extends Closeable {
@@ -47,34 +49,54 @@ public interface ConfigurationSource extends Closeable {
      *
      * @return A list of property names, without the common library prefix.
      */
-    List<String> systemProperties();
+    default List<String> systemProperties() {
+        return Collections.emptyList();
+    }
 
     /**
      * Provide configuration parameters.
      *
-     * @param configuration Configuration parameters for this implementation.
+     * @param configuration  Configuration parameters for this implementation.
+     * @param defaults       Default settings. Implementing classes may add configuration parameters to this.
+     * @param changeListener Listener to inform of changes in the configuration source.
      */
-    void configure(Configuration configuration) throws ConfigurationException;
+    void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
+            throws ConfigurationException;
 
     /**
-     * Start listening for changes in the configuration source, and notify a listener of changes in the configuration
-     * source.
+     * Start listening for changes in the specified configuration part, and notify a listener of changes.
      * <p>
      * Implementing classes may or may not act on this call, depending on their nature. Static configuration sources
      * for example are presumed to never change, so no callback will ever occur for those implementations.
      *
-     * @param deserializer Deserializer that can turn an input stream into a configuration instance.
-     * @param listener Listener to inform of changes in the configuration source.
+     * @param name Configuration part name.
      */
-    void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener);
+    void listen(String name);
+
+    /**
+     * Stop listening for changes in the specified configuration part.
+     *
+     * @param name Configuration part name.
+     */
+    void stopListening(String name);
 
     /**
      * Load configuration from this source once.
      *
-     * @param deserializer Deserializer that can turn an input stream into a configuration instance.
-     * @param listener Listener to notify when the configuration has been loaded.
+     * @param name Configuration part name.
      * @throws ConfigurationException Thrown when loading the configuration fails.
      */
-    void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
-            throws ConfigurationException;
+    InputStream load(String name) throws ConfigurationException;
+
+    /**
+     * Turn the root config name into its corresponding configuration part name. E.g., for a file based configuration
+     * source the root config name the application is bootstrapped with might be an absolute URL like
+     * {@code /home/user/projects/application/config/config.yaml}, the normalized name would be {@code config.yaml}.
+     *
+     * @param rootConfigName Root config name.
+     * @return The normalized name.
+     */
+    default String normalizeRootConfigName(String rootConfigName) {
+        return rootConfigName;
+    }
 }

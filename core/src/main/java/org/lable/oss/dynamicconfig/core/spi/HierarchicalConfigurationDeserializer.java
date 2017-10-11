@@ -18,6 +18,7 @@ package org.lable.oss.dynamicconfig.core.spi;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.ConfigurationResult;
 
 import java.io.InputStream;
 
@@ -29,8 +30,16 @@ public interface HierarchicalConfigurationDeserializer {
      * Deserialize data representing a {@link HierarchicalConfiguration} into a class instance.
      *
      * @param input Input stream containing the raw serialized data.
-     * @return A configuration instance.
+     * @return A result object containing the configuration instance and any references to other configuration
+     * resources included or extended.
      * @throws ConfigurationException Thrown when deserialization fails.
      */
-    HierarchicalConfiguration deserialize(InputStream input) throws ConfigurationException;
+    ConfigurationResult deserialize(InputStream input) throws ConfigurationException;
+
+    /**
+     * Default name for the root configuration resource.
+     *
+     * @return Default name.
+     */
+    String defaultConfigName();
 }

@@ -16,35 +16,21 @@
 package org.lable.oss.dynamicconfig.provider.zookeeper;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.commons.lang.StringUtils;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
-import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
+import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.apache.zookeeper.AsyncCallback.DataCallback;
-import static org.apache.zookeeper.Watcher.Event.KeeperState;
 
 /**
  * Retrieve configuration from a Zookeeper quorum, and maintain a watch for updates.
@@ -52,17 +38,12 @@ import static org.apache.zookeeper.Watcher.Event.KeeperState;
 public class ZookeepersAsConfigSource implements ConfigurationSource {
     private final static Logger logger = LoggerFactory.getLogger(ZookeepersAsConfigSource.class);
 
-    /**
-     * Wait this long, in seconds, before the connection attempt to the Zookeeper quorum should time out.
-     */
-    static final int ZOOKEEPER_TIMEOUT = 10;
-
     String[] quorum;
-    String znode;
     String copyQuorumTo;
 
-    NodeWatcher watcher;
+    ConfigChangeListener changeListener;
     ExecutorService executorService;
+    MonitoringZookeeperConnection zookeeperConnection;
 
     /**
      * Construct a new ZookeepersAsConfigSource.
@@ -105,121 +86,58 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      * </dl>
      */
     @Override
-    public void configure(Configuration configuration) throws ConfigurationException {
+    public void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
+            throws ConfigurationException {
         String[] quorum = configuration.getStringArray("quorum");
         String znode = configuration.getString("znode");
         String copyQuorumTo = configuration.getString("copy.quorum.to");
-        String appName = configuration.getString(ConfigurationInitializer.APPNAME_PROPERTY);
+        String rootConfig = configuration.getString(ConfigurationManager.ROOTCONFIG_PROPERTY);
 
         if (quorum.length == 0) {
             throw new ConfigurationException("quorum", "No ZooKeeper quorum specified.");
         }
 
-        if (isBlank(znode)) {
+        if (znode == null || znode.isEmpty()) {
             throw new ConfigurationException("znode", "No znode specified.");
         }
 
-        if (isBlank(appName)) {
-            throw new ConfigurationException(ConfigurationInitializer.APPNAME_PROPERTY,
-                    "No application name found.");
+        if (rootConfig == null || rootConfig.isEmpty()) {
+            throw new ConfigurationException(ConfigurationManager.APPNAME_PROPERTY, "No application name found.");
         }
 
-        if (isNotBlank(copyQuorumTo)) {
+        if (copyQuorumTo != null) {
             this.copyQuorumTo = copyQuorumTo;
         }
 
+        this.changeListener = changeListener;
         this.quorum = quorum;
-        this.znode = combinePath(znode, appName);
-    }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * When this method is called, it connects to the Zookeeper quorum, and maintains a watch on the
-     * configuration node.
-     */
-    @Override
-    public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
-        // Act on changed data.
-        DataCallback callback = (rc, path, ctx, data, stat) -> {
-            if (stat != null) {
-                HierarchicalConfiguration hc;
-                try {
-                    hc = parseData(deserializer, data);
-                } catch (ConfigurationException e) {
-                    logger.error("Received invalid data from ZooKeeper quorum. I am ignoring it and keeping the " +
-                            "current configuration!", e);
-                    return;
-                }
-                if (hc != null) {
-                    logger.info("Configuration received from Zookeeper quorum. Znode: " + path);
-                    listener.changed(hc);
-                }
-            }
-        };
+        defaults.setProperty(copyQuorumTo, quorum);
 
-        // Launch the node watcher.
-        NodeWatcher watcher = new NodeWatcher(StringUtils.join(quorum, ","), callback, znode);
-        this.watcher = watcher;
+        zookeeperConnection = new MonitoringZookeeperConnection(quorum, znode, changeListener);
         executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(watcher);
+        executorService.execute(zookeeperConnection);
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * For the initial loading of the configuration, this class connects to the Zookeeper quorum,
-     * waits for a successful connection, and then loads the configuration once.
-     */
     @Override
-    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
-            throws ConfigurationException {
-        /* It's the */
-        final CountDownLatch latch = new CountDownLatch(1);
+    public void listen(String name) {
+        zookeeperConnection.listen(name);
+    }
 
-        ZooKeeper zookeeper;
-        // Connect to the quorum and wait for the successful connection callback.;
-        try {
-            zookeeper = new ZooKeeper(StringUtils.join(quorum, ","), ZOOKEEPER_TIMEOUT * 1000, watchedEvent -> {
-                if (watchedEvent.getState() == KeeperState.SyncConnected) {
-                    // Signal that the Zookeeper connection is established.
-                    latch.countDown();
-                }
-            });
-        } catch (IOException e) {
-            throw new ConfigurationException("Failed to open a connection to the Zookeeper quorum: " +
-                    StringUtils.join(quorum, ","), e);
+    @Override
+    public void stopListening(String name) {
+        zookeeperConnection.stopListening(name);
+    }
+
+    @Override
+    public InputStream load(String name) throws ConfigurationException {
+        Optional<InputStream> is = zookeeperConnection.load(name);
+
+        if (!is.isPresent()) {
+            throw new ConfigurationException("Failed to load " + name + ".");
         }
 
-        // Retrieve the configuration data.
-        byte[] configData;
-        try {
-            // Wait for the connection to be established.
-            boolean successfulCountDown = latch.await(ZOOKEEPER_TIMEOUT * 1000 + 300, TimeUnit.MILLISECONDS);
-            if (!successfulCountDown) {
-                // The latch timed out. This means a connection to the quorum could not be established.
-                throw new ConfigurationException("Zookeeper connection attempt timed out.");
-            }
-            logger.info("Looking at " + znode + " for configuration data.");
-            configData = zookeeper.getData(znode, false, null);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new ConfigurationException("Thread interrupted.");
-        } catch (KeeperException e) {
-            throw new ConfigurationException("Problem accessing configuration data through Zookeeper quorum.", e);
-        } catch (IllegalArgumentException e) {
-            throw new ConfigurationException("Path to configuration data in Zookeeper quorum does not make sense: "
-                    + znode, e);
-        } finally {
-            try {
-                zookeeper.close();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        HierarchicalConfiguration hc = parseData(deserializer, configData);
-        listener.changed(hc);
+        return is.get();
     }
 
     /**
@@ -227,51 +145,12 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
      */
     @Override
     public void close() throws IOException {
-        watcher.close();
+        zookeeperConnection.close();
         executorService.shutdownNow();
         try {
             executorService.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    /**
-     * Parse the raw configuration data. This logs the data if parsing fails.
-     *
-     * @param raw Raw byte data.
-     * @return The configuration tree, or null when parsing fails.
-     */
-    HierarchicalConfiguration parseData(final HierarchicalConfigurationDeserializer deserializer, byte[] raw)
-            throws ConfigurationException {
-        InputStream bis = new ByteArrayInputStream(raw);
-        HierarchicalConfiguration hc;
-        try {
-            hc = deserializer.deserialize(bis);
-        } catch (ConfigurationException e) {
-            throw new ConfigurationException("Failed to parse configuration data retrieved from Zookeeper quorum. " +
-                    "Raw data:\n\n" + new String(raw) + "\n\n" + e.getCause().getMessage());
-        }
-
-        // If enabled, copy the Zookeeper quorum to the configuration tree.
-        if (copyQuorumTo != null) {
-            hc.setProperty(copyQuorumTo, quorum);
-        }
-
-        return hc;
-    }
-
-    static String combinePath(String znode, String appName) {
-        if (!isBlank(appName)) {
-            if (!znode.substring(znode.length() - 1, znode.length()).equals("/")) {
-                znode += "/";
-            }
-            if (appName.startsWith("/")) {
-                appName = appName.substring(1);
-            }
-            znode += appName;
-        }
-
-        return znode;
     }
 }

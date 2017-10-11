@@ -28,6 +28,7 @@ public enum InstanceLocalSettings {
     INSTANCE;
 
     private String name;
+    private String rootPath;
     private Map<MetaDataKey, String> metaData;
 
     InstanceLocalSettings() {
@@ -41,6 +42,14 @@ public enum InstanceLocalSettings {
 
     public String getAppName() {
         return name;
+    }
+
+    public void setRootPath(String rootPath) {
+        this.rootPath = rootPath;
+    }
+
+    public String getRootPath() {
+        return rootPath;
     }
 
     public void setMetaData(String category, String key, String value) {

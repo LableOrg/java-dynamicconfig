@@ -16,29 +16,17 @@
 package org.lable.oss.dynamicconfig.provider;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * Load configuration from a file on the classpath.
  */
 public class OnClasspathConfigSource implements ConfigurationSource {
-    private final static Logger logger = LoggerFactory.getLogger(OnClasspathConfigSource.class);
-
-    String configPath = null;
-
     /**
      * Construct a new OnClasspathConfigSource.
      */
@@ -56,59 +44,49 @@ public class OnClasspathConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Expects a parameter "path" containing the path to the configuration file, relative to the classpath.
      */
     @Override
-    public List<String> systemProperties() {
-        return Collections.singletonList("path");
+    public void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
+            throws ConfigurationException {
+        // No-op.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public InputStream load(String name) throws ConfigurationException {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        InputStream is = cl.getResourceAsStream(name);
+        if (is == null) {
+            throw new ConfigurationException("Could not find " + name + " in the classpath.");
+        }
+
+        return is;
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * Expects a parameter "path" containing the path to the configuration file, relative to the classpath.
+     * OnClasspathConfigSource does not actually do anything in its implementation of this method. Classpath
+     * configuration sources are presumed to be static.
      */
     @Override
-    public void configure(Configuration configuration) throws ConfigurationException {
-        String configPath = configuration.getString("path");
-        if (isBlank(configPath)) {
-            throw new ConfigurationException("path", "Parameter not set or empty.");
-        }
-
-        this.configPath = configPath;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
+    public void listen(String name) {
         // No-op. This configuration source is presumed static.
     }
 
     /**
      * {@inheritDoc}
+     * <p>
+     * OnClasspathConfigSource does not actually do anything in its implementation of this method. Classpath
+     * configuration sources are presumed to be static.
      */
     @Override
-    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
-            throws ConfigurationException {
-        if (configPath == null) {
-            throw new ConfigurationException("Path is empty. Was #configure called?");
-        }
-
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        InputStream is =  cl.getResourceAsStream(configPath);
-        if (is == null) {
-            throw new ConfigurationException("Could not find " + configPath + " in the classpath.");
-        }
-
-        HierarchicalConfiguration hc;
-        try {
-            hc = deserializer.deserialize(is);
-        } catch (ConfigurationException e) {
-            throw new ConfigurationException("Failed to parse " + configPath + " found on classpath.", e);
-        }
-
-        listener.changed(hc);
+    public void stopListening(String name) {
+        // No-op. This configuration source is presumed static.
     }
 
     /**

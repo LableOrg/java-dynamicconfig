@@ -16,24 +16,24 @@
 package org.lable.oss.dynamicconfig.provider;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
-import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.provider.file.FileWatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.lable.oss.dynamicconfig.core.ConfigurationManager.ROOTCONFIG_PROPERTY;
 
 /**
  * Loads configuration from a file on disk.
@@ -41,10 +41,11 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 public class FileBasedConfigSource implements ConfigurationSource {
     private static final Logger logger = LoggerFactory.getLogger(FileBasedConfigSource.class);
 
-    File config = null;
-
-    Runnable watcher;
     ExecutorService executorService;
+    Path rootDir;
+    FileWatcher fileWatcher;
+    ConfigChangeListener changeListener;
+    Map<Path, String> pathNameMapping = new HashMap<>();
 
     /**
      * Construct a new FileBasedConfigSource.
@@ -65,92 +66,92 @@ public class FileBasedConfigSource implements ConfigurationSource {
      * {@inheritDoc}
      */
     @Override
-    public List<String> systemProperties() {
-        return Collections.singletonList("path");
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Expects a parameter "path" containing the path to the configuration file, relative to the classpath.
-     */
-    @Override
-    public void configure(Configuration configuration) throws ConfigurationException {
-        String configPath = configuration.getString("path");
-
-        if (isBlank(configPath)) {
-            throw new ConfigurationException("path", "Parameter not set or empty.");
-        }
-
-        File file = new File(configPath);
-        if (!file.exists()) {
-            throw new ConfigurationException("path", format("File does not exist at path %s.", file.getPath()));
-        }
-
-        config = file;
-        logger.info("Loading configuration from file: " + config.getPath());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void listen(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener) {
-        Path configPath = config.toPath();
-
-        FileWatcher.Callback callback = (event, filePath) -> {
-            HierarchicalConfiguration hc = null;
-            switch (event) {
-                case FILE_MODIFIED:
-                    logFileModified(filePath);
-                    hc = loadConfiguration(filePath.toFile(), deserializer);
-                    break;
-                case FILE_CREATED:
-                    logFileCreated(filePath);
-                    // There is no need to reload the configuration after FILE_CREATED, because FILE_MODIFIED
-                    // will be raised right after it.
-                    break;
-                case FILE_DELETED:
-                    logFileDeleted(filePath);
-                    break;
-            }
-            if (hc != null) {
-                listener.changed(hc);
-            }
-        };
-
-        FileWatcher fileWatcher;
-        try {
-            fileWatcher = new FileWatcher(callback, configPath);
-        } catch (IOException e) {
-            logger.error(format("Failed to acquire a file watcher. " +
-                    "Configuration file %s will not be monitored for changes.", configPath));
-            return;
-        }
-
-        // Launch the file watcher.
-        watcher = fileWatcher;
-        executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(fileWatcher);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void load(final HierarchicalConfigurationDeserializer deserializer, final ConfigChangeListener listener)
+    public void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
             throws ConfigurationException {
-        if (config == null) {
-            throw new ConfigurationException("No alternative configuration file found.");
+        String rootConfigFile = configuration.getString(ROOTCONFIG_PROPERTY);
+        if (rootConfigFile == null) {
+            throw new ConfigurationException("Parameter " + ROOTCONFIG_PROPERTY + " not set.");
         }
 
-        HierarchicalConfiguration hc = loadConfiguration(config, deserializer);
-
-        if (hc == null) {
-            throw new ConfigurationException("Failed to load configuration file.");
+        this.rootDir = Paths.get(rootConfigFile).getParent();
+        if (!Files.isDirectory(rootDir)) {
+            throw new ConfigurationException("Parameter configDir is not a directory (" + rootConfigFile + ").");
         }
 
-        listener.changed(hc);
+        if (changeListener != null) {
+            try {
+                this.fileWatcher = new FileWatcher(this::handleFileChanged, rootDir);
+            } catch (IOException e) {
+                throw new ConfigurationException(e);
+            }
+
+            this.changeListener = changeListener;
+            this.executorService = Executors.newSingleThreadExecutor();
+            this.executorService.execute(fileWatcher);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public InputStream load(String name) throws ConfigurationException {
+        if (name == null || name.isEmpty()) {
+            throw new ConfigurationException("name", "Configuration part name cannot be null or empty.");
+        }
+
+        Path filePath = rootDir.resolve(name);
+        pathNameMapping.put(filePath, name);
+
+        try {
+            return Files.newInputStream(filePath);
+        } catch (IOException e) {
+            throw new ConfigurationException("Failed to find configuration part in file " + filePath + ".", e);
+        }
+    }
+
+    @Override
+    public void listen(String name) {
+        if (changeListener != null) {
+            fileWatcher.listen(Paths.get(name));
+        }
+    }
+
+    @Override
+    public String normalizeRootConfigName(String rootConfigName) {
+        Path path = Paths.get(rootConfigName);
+
+        return path.getFileName().toString();
+    }
+
+    @Override
+    public void stopListening(String name) {
+        if (changeListener != null) {
+            fileWatcher.stopListening(Paths.get(name));
+        }
+    }
+
+    void handleFileChanged(FileWatcher.Event event, Path filePath) {
+        switch (event) {
+            case FILE_CREATED:
+            case FILE_MODIFIED:
+                String mutation = event == FileWatcher.Event.FILE_CREATED ? "(re)created" : "modified";
+                logger.info("Configuration part file {}, reloading configuration.", mutation);
+                Path relativeToRootDir = rootDir.resolve(filePath);
+                String name = pathNameMapping.putIfAbsent(relativeToRootDir, relativeToRootDir.toString());
+                try {
+                    changeListener.changed(name, load(name));
+                } catch (ConfigurationException e) {
+                    logger.error("Failed to load configuration part " + name + ".", e);
+                }
+                break;
+            case FILE_DELETED:
+                logger.warn("Configuration part file {} was deleted. Its contents will be kept in configuration memory until " +
+                        "a new file replaces it, or if no other configuration reference it.", filePath);
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -158,39 +159,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
      */
     @Override
     public void close() throws IOException {
-        executorService.shutdown();
-    }
-
-    static HierarchicalConfiguration loadConfiguration(File config, HierarchicalConfigurationDeserializer deserializer) {
-        InputStream is;
-        try {
-            is = new FileInputStream(config);
-        } catch (FileNotFoundException e) {
-            logger.warn("Tried to load configuration at: " + config.getAbsolutePath()
-                    + ", but no file could be found at that path.");
-            return null;
-        }
-
-        HierarchicalConfiguration hc;
-        try {
-            hc = deserializer.deserialize(is);
-        } catch (ConfigurationException e) {
-            logger.error("Failed to parse supplied configuration file.", e);
-            return null;
-        }
-
-        return hc;
-    }
-
-    static void logFileModified(Path filePath) {
-        logger.info(format("Configuration file %s modified, reloading configuration.", filePath));
-    }
-
-    static void logFileDeleted(Path filePath) {
-        logger.warn(format("Configuration file %s was deleted. Keeping currently loaded configuration.", filePath));
-    }
-
-    static void logFileCreated(Path filePath) {
-        logger.info(format("Configuration file %s (re)created.", filePath));
+        if (fileWatcher != null) fileWatcher.close();
+        if (executorService != null) executorService.shutdown();
     }
 }

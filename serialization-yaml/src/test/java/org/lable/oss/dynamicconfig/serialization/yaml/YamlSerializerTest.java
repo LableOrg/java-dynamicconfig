@@ -20,11 +20,14 @@ import org.apache.commons.io.IOUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.ConfigurationResult;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 
-import java.io.*;
-import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -46,14 +49,16 @@ public class YamlSerializerTest {
         HierarchicalConfigurationSerializer serializer = new YamlSerializer();
         HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
 
-        HierarchicalConfiguration configuration1 = deserializer.deserialize(IOUtils.toInputStream(testYaml));
+        ConfigurationResult result1 = deserializer.deserialize(IOUtils.toInputStream(testYaml));
+        HierarchicalConfiguration configuration1 = result1.getConfiguration();
 
         // Save the configuration tree once.
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         serializer.serialize(configuration1, output);
         final String resultOnce = output.toString("UTF-8");
 
-        HierarchicalConfiguration configuration2 = deserializer.deserialize(IOUtils.toInputStream(resultOnce));
+        ConfigurationResult result2 = deserializer.deserialize(IOUtils.toInputStream(resultOnce));
+        HierarchicalConfiguration configuration2 = result2.getConfiguration();
 
         // Save it twice, the output should be exactly the same as when we first saved it.
         // It won't be the same as test.yml though, because the same data can be represented

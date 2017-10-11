@@ -38,11 +38,11 @@ public class ConcurrencyIT {
         final Path configFile = Files.createTempFile("config", ".yaml");
         Files.write(configFile, "test: 0\n".getBytes());
 
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "file");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".file.path", configFile.toAbsolutePath().toString());
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "file");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".file.path", configFile.toAbsolutePath().toString());
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("test", -1);
-        final Configuration configuration = ConfigurationInitializer.configureFromProperties(
+        final Configuration configuration = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
 

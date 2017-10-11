@@ -17,35 +17,29 @@ package org.lable.oss.dynamicconfig.serialization.yaml;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.io.IOUtils;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.ConfigurationResult;
+import org.lable.oss.dynamicconfig.core.IncludeReference;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 public class YamlDeserializerTest {
-    private static String testYaml;
-
-    @BeforeClass
-    public static void loadTestYaml() throws IOException {
-        InputStream is = YamlDeserializer.class.getClassLoader().getResourceAsStream("test.yml");
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(is, writer, "UTF-8");
-        testYaml = writer.toString();
-    }
-
     @Test
     public void testLoad() throws ConfigurationException, IOException, ClassNotFoundException {
         HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
-        HierarchicalConfiguration config = deserializer.deserialize(IOUtils.toInputStream(testYaml));
+        InputStream testYaml = getClass().getResourceAsStream("/test.yml");
+        ConfigurationResult result = deserializer.deserialize(testYaml);
+        HierarchicalConfiguration config = result.getConfiguration();
 
         // Type checking.
         assertThat(config.getString("type.string"), is("Okay"));
@@ -77,6 +71,22 @@ public class YamlDeserializerTest {
         assertThat(config.getString("tree.branchL1a.branchL2b.branchL3h"), is("leaf_h"));
         // Trim, because this value is defined as a multi-line value.
         assertThat(config.getString("tree.branchL1a.branchL2b.branchL3i").trim(), is("leaf_i"));
+    }
+
+    @Test
+    public void testIncludes() throws ConfigurationException {
+        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
+        InputStream testWithIncludeTagsYaml = getClass().getResourceAsStream("/testWithIncludes.yml");
+
+        ConfigurationResult result = deserializer.deserialize(testWithIncludeTagsYaml);
+
+        assertThat(
+                result.getIncludeReferences(),
+                containsInAnyOrder(
+                        new IncludeReference("tree.branch-a", "i1"),
+                        new IncludeReference("base")
+                )
+        );
     }
 
     @Test(expected = ConfigurationException.class)

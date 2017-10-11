@@ -19,7 +19,7 @@ import com.google.inject.Inject;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
-import org.lable.oss.dynamicconfig.core.ConfigurationInitializer;
+import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import javax.inject.Provider;
@@ -27,7 +27,7 @@ import javax.inject.Singleton;
 
 /**
  * Provides a singleton, thread-safe configuration instance by invoking {@link
- * ConfigurationInitializer#configureFromProperties(HierarchicalConfiguration,
+ * ConfigurationManager#configureFromProperties(HierarchicalConfiguration,
  * HierarchicalConfigurationDeserializer)}. It will attempt to load a configuration resource based on the system
  * properties that configure it.
  * <p>
@@ -54,7 +54,7 @@ public class ConfigurationProvider implements Provider<Configuration> {
     public Configuration get() {
         Configuration result;
         try {
-            result = ConfigurationInitializer.configureFromProperties(defaults, deserializer);
+            result = ConfigurationManager.configureFromProperties(defaults, deserializer);
         } catch (ConfigurationException e) {
             // Treat a failure to bootstrap the configuration as fatal.
             throw new RuntimeException(e);

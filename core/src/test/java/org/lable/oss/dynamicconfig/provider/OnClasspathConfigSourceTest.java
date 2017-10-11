@@ -29,41 +29,41 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class OnClasspathConfigSourceTest {
-
-    @Test
-    public void testListen() {
-        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
-        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
-
-        // Not implemented, so the only thing we can test is whether the method can be called.
-        OnClasspathConfigSource source = new OnClasspathConfigSource();
-        source.listen(mockLoader, mockListener);
-    }
-
-    @Test(expected = ConfigurationException.class)
-    public void testLoadNoResource() throws ConfigurationException {
-        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
-        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
-
-        OnClasspathConfigSource source = new OnClasspathConfigSource();
-        Configuration config = new BaseConfiguration();
-        config.setProperty("path", "bogusPath");
-        source.configure(config);
-
-        source.load(mockLoader, mockListener);
-    }
-
-    @Test(expected = ConfigurationException.class)
-    public void testLoadFailedLoadConfig() throws ConfigurationException {
-        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
-        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
-
-        when(mockLoader.deserialize(any(InputStream.class))).thenThrow(new ConfigurationException("!"));
-
-        OnClasspathConfigSource source = new OnClasspathConfigSource();
-        Configuration config = new BaseConfiguration();
-        config.setProperty("path", "dummy.txt");
-        source.configure(config);
-        source.load(mockLoader, mockListener);
-    }
+//
+//    @Test
+//    public void testListen() {
+//        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
+//        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
+//
+//        // Not implemented, so the only thing we can test is whether the method can be called.
+//        OnClasspathConfigSource source = new OnClasspathConfigSource();
+//        source.listen(mockLoader, mockListener);
+//    }
+//
+//    @Test(expected = ConfigurationException.class)
+//    public void testLoadNoResource() throws ConfigurationException {
+//        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
+//        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
+//
+//        OnClasspathConfigSource source = new OnClasspathConfigSource();
+//        Configuration config = new BaseConfiguration();
+//        config.setProperty("path", "bogusPath");
+//        source.configure(config);
+//
+//        source.load(mockLoader, mockListener);
+//    }
+//
+//    @Test(expected = ConfigurationException.class)
+//    public void testLoadFailedLoadConfig() throws ConfigurationException {
+//        ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
+//        HierarchicalConfigurationDeserializer mockLoader = mock(HierarchicalConfigurationDeserializer.class);
+//
+//        when(mockLoader.deserialize(any(InputStream.class))).thenThrow(new ConfigurationException("!"));
+//
+//        OnClasspathConfigSource source = new OnClasspathConfigSource();
+//        Configuration config = new BaseConfiguration();
+//        config.setProperty("path", "dummy.txt");
+//        source.configure(config);
+//        source.load(mockLoader, mockListener);
+//    }
 }

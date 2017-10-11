@@ -27,9 +27,9 @@ import static org.junit.Assert.assertThat;
 public class BasicUseIT {
     @Test
     public void noDefaultsClasspathTest() throws ConfigurationException {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
-        Configuration configuration = ConfigurationInitializer.configureFromProperties(
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        Configuration configuration = ConfigurationManager.configureFromProperties(
                 new YamlDeserializer()
         );
 
@@ -38,13 +38,13 @@ public class BasicUseIT {
 
     @Test
     public void withDefaultsClasspathTest() throws ConfigurationException {
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationInitializer.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");
 
-        Configuration configuration = ConfigurationInitializer.configureFromProperties(
+        Configuration configuration = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
 
