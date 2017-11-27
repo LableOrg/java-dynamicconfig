@@ -30,17 +30,34 @@ public class ConfigurationComposition {
     ConfigReference root;
     HierarchicalConfiguration defaultConfiguration;
 
+    /**
+     * Internal name used for the special default configuration that can be provided hard-coded.
+     */
     private static final String DEFAULT_CONFIG_NAME = "--------";
 
+    /**
+     * Create a new empty {@link ConfigurationComposition}.
+     */
     public ConfigurationComposition() {
         this(null);
     }
 
+    /**
+     * Create a new {@link ConfigurationComposition}, adding a special non-dynamic configuration part that will be
+     * used as the default (the combined configuration will extend from it).
+     *
+     * @param defaultConfiguration Default configuration.
+     */
     public ConfigurationComposition(HierarchicalConfiguration defaultConfiguration) {
         this.allReferences = new HashMap<>();
         this.defaultConfiguration = defaultConfiguration;
     }
 
+    /**
+     * Mark a configuration reference as root of this composition.
+     *
+     * @param rootReference Configuration reference.
+     */
     public void setRootReference(ConfigReference rootReference) {
         extendFromDefaults(rootReference);
         this.root = rootReference;
@@ -117,22 +134,35 @@ public class ConfigurationComposition {
         return allReferences.values().stream().filter(filter).collect(Collectors.toList());
     }
 
+    public synchronized void getRidOfOrphans() {
+        allReferences.values().removeIf(ref -> ref.getConfigState() == ConfigState.ORPHANED);
+    }
+
+    /**
+     * Assemble the full configuration as represented by this composition.
+     *
+     * @param combinedConfig Configuration object to place the configuration in.
+     */
     public synchronized void assembleConfigTree(CombinedConfiguration combinedConfig) {
         combinedConfig.clear();
         assembleConfigSection(null, combinedConfig, root);
     }
 
-    public synchronized void getRidOfOrphans() {
-        allReferences.values().removeIf(ref -> ref.getConfigState() == ConfigState.ORPHANED);
-    }
-
+    /**
+     * Recursively assemble the combined configuration.
+     *
+     * @param path            Path in the configuration object of the current configuration reference.
+     *                        May be {@code null} for the root path.
+     * @param combinedConfig  Configuration object to write the configuration to.
+     * @param configReference Configuration reference to process.
+     */
     void assembleConfigSection(String path, CombinedConfiguration combinedConfig, ConfigReference configReference) {
+        // Give every configuration part a unique name.
         String name = (path == null ? "" : path) + "->" + configReference.getName();
 
         if (configReference.configuration != null) {
             combinedConfig.addConfiguration(configReference.configuration, name, path);
         }
-
 
         // Includes. These take precedence over the configuration parts that are extended.
         configReference.referencedByMe.forEach((includeReference, reference) -> {
@@ -150,6 +180,11 @@ public class ConfigurationComposition {
         });
     }
 
+    /**
+     * Make the referenced configuration part extend from the default configuration (if set).
+     *
+     * @param reference Configuration reference.
+     */
     void extendFromDefaults(ConfigReference reference) {
         // Only if a default configuration was passed to us.
         if (defaultConfiguration == null) return;
@@ -208,6 +243,10 @@ public class ConfigurationComposition {
         }
     }
 
+    /**
+     * A part of the configuration composition. Each part holds its own part of the configuration, and maintains a
+     * bidirectional mapping of configuration parts it references, and those that reference it.
+     */
     static class ConfigReference {
         Set<ConfigReference> referencingMe;
         Map<IncludeReference, ConfigReference> referencedByMe;
