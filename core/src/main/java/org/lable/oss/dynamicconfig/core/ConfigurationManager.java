@@ -65,7 +65,7 @@ public class ConfigurationManager {
      * @return Thread-safe configuration instance.
      * @throws ConfigurationException Thrown when the required system properties are not set.
      */
-    public static Configuration configureFromProperties(HierarchicalConfigurationDeserializer deserializer)
+    public static InitializedConfiguration configureFromProperties(HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
         return configureFromProperties(null, deserializer);
     }
@@ -79,7 +79,7 @@ public class ConfigurationManager {
      * @return Thread-safe configuration instance.
      * @throws ConfigurationException Thrown when the required system properties are not set.
      */
-    public static Configuration configureFromProperties(HierarchicalConfiguration defaults,
+    public static InitializedConfiguration configureFromProperties(HierarchicalConfiguration defaults,
                                                         HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
         String desiredSourceName = System.getProperty(LIBRARY_PREFIX + ".type");
@@ -105,7 +105,7 @@ public class ConfigurationManager {
      * @return Thread-safe configuration instance.
      * @throws ConfigurationException Thrown when the required system properties are not set.
      */
-    public static Configuration fromTheseSettings(String rootConfig,
+    public static InitializedConfiguration fromTheseSettings(String rootConfig,
                                                   String appName,
                                                   ConfigurationSource configurationSource,
                                                   HierarchicalConfigurationDeserializer deserializer,
@@ -118,7 +118,7 @@ public class ConfigurationManager {
         return initialize(configurationSource, sourceConfiguration, deserializer, defaults);
     }
 
-    static Configuration initialize(ConfigurationSource desiredSource,
+    static InitializedConfiguration initialize(ConfigurationSource desiredSource,
                                     Configuration sourceConfiguration,
                                     HierarchicalConfigurationDeserializer deserializer,
                                     HierarchicalConfiguration defaults) throws ConfigurationException {
@@ -148,7 +148,7 @@ public class ConfigurationManager {
 
         concurrentConfiguration.withConfiguration(composition::assembleConfigTree);
 
-        return concurrentConfiguration;
+        return new InitializedConfiguration(concurrentConfiguration, desiredSource);
     }
 
     static ConfigurationSource sourceFromString(String desiredSourceName) throws ConfigurationException {

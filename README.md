@@ -1,38 +1,39 @@
 Dynamic Config
 ==============
 
-In short, a configuration library designed as a provider of 
-[Apache Commons Configuration](https://commons.apache.org/proper/commons-configuration/index.html) instances that can
-be updated at runtime.
+Dynamic Config is a Java configuration library designed to provide 
+[Apache Commons Configuration](https://commons.apache.org/proper/commons-configuration/index.html) 
+instances that can be updated at runtime.
 
 ## Goals
 
-Dynamic Config is designed to provide a dynamic configuration resource to multiple Java web applications running on 
-multiple webservers from a central source. Although the core library is implementation agnostic, this project was 
-designed to work with [https://zookeeper.apache.org/](Apache ZooKeeper).
+This library is designed to provide a dynamic configuration resource suitable for use in multiple
+concurrent Java (web) applications running on multiple servers, where the configuration is provided 
+from a central source. Although the core library is implementation agnostic, this project 
+was designed to work with [https://zookeeper.apache.org/](Apache ZooKeeper).
 
 We created this library to:
 
-* provide a simple way to manage runtime configuration parameters for Java web applications deployed on several 
-  Tomcat-servers from a single place
-* be able to update runtime configuration without the need to redeploy WAR archives
+* provide a simple way to manage runtime configuration parameters for Java web applications 
+  deployed on several Tomcat-servers from a single place
+* be able to update runtime configurations without the need to redeploy WAR archives
 
 To create and update configuration resources we use a 
-[simple command line script](https://github.com/LableOrg/mrconfig) deployed on a server accessible via SSH, but any 
-tool or service that can update ZooKeeper nodes should work.
+[simple command line script](https://github.com/LableOrg/mrconfig) deployed on a server accessible 
+via SSH, but any tool or service that can update ZooKeeper nodes should work.
 
 ## Bootstrapping Dynamic Config
 
-Dynamic Config is designed to to be used in situations where a multiple web applications are run on multiple Tomcat 
-servers. In this distributed scenario Dynamic Config can be used with Apache ZooKeeper to provide the configuration. 
-Alternatively, a local configuration file may be used. This approach implies that you have only one machine running a
-single instance of your application, or that you take care of distributing the configuration files yourself (e.g., 
-via SSH).
+Dynamic Config is designed to to be used in situations where multiple web applications are run on 
+multiple Tomcat servers. In this distributed scenario Dynamic Config can be used with Apache 
+ZooKeeper to provide the configuration sources. Alternatively, a local configuration file may be
+used. This approach implies that you have only one machine running a single instance of your 
+application, or that you take care of distributing the configuration files yourself (e.g., via SSH).
 
 ### Dynamic configuration with a YAML file on the local file system
 
-If your (web) application runs on a single machine, configuration may be provided through a local [YAML](http://yaml
-.org/) file. Add these Maven dependencies:
+If your (web) application runs on a single machine, configuration may be provided through a local 
+[YAML](http://yaml.org/) file. Add these Maven dependencies:
 
 ```xml
 <properties>
@@ -41,8 +42,9 @@ If your (web) application runs on a single machine, configuration may be provide
 
 <dependencies>
   <dependency>
+    <!-- Useful i -->
     <groupId>org.lable.oss.dynamicconfig</groupId>
-    <artifactId>servlet-util</artifactId>
+    <artifactId>dynamic-config-servlet-util</artifactId>
     <version>${dynamic.config.version}</version>
   </dependency>
   <dependency>
@@ -52,7 +54,7 @@ If your (web) application runs on a single machine, configuration may be provide
   </dependency>
   <dependency>
     <groupId>org.lable.oss.dynamicconfig.serialization</groupId>
-    <artifactId>yaml</artifactId>
+    <artifactId>dynamic-config-serialization-yaml</artifactId>
     <version>${dynamic.config.version}</version>
   </dependency>
 </dependencies>
@@ -142,3 +144,60 @@ cache the values retrieved from it.
 This approach assumes that all web applications on the web servers are managed by the same trusted group of people. 
 Any  web application that can reach your private ZooKeeper quorum can request any configuration source available 
 there.  If you have a ZooKeeper quorum running in your computing environment this is usually the case.
+
+## Organizing configuration files
+
+This library currently supports only YAML as a configuration language (other languages that 
+represent a tree of configuration parameters can be added by implementing 
+`HierarchicalConfigurationDeserializer`). To provide a way to split up large configuration files,
+a custom YAML tag is supported.
+
+For example, if the main configuration file is `config/config.yaml`:
+
+```yaml
+extends:
+  - defaults.yaml
+
+settings:
+  coffee: yes
+  foo:
+    number-of-foos: 5
+    enabled: yes
+  bar: !include bar/bar-settings.yaml
+```
+
+And these files (or nodes in the case of ZooKeeper) exist:
+
+`defaults.yaml`:
+
+```yaml
+settings:
+  tea: yes
+  milk: no
+  coffee: no
+```
+
+`bar/bar-settings.yaml`:
+
+```yaml
+number-of-bars: 3
+enabled: yes
+```
+
+Then the resulting configuration tree looks like this:
+
+```yaml
+extends:
+  - defaults.yaml
+
+settings:
+  tea: yes
+  milk: no
+  coffee: yes
+  foo:
+    number-of-foos: 5
+    enabled: yes
+  bar:
+    number-of-bars: 3
+    enabled: yes
+```

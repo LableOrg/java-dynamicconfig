@@ -29,7 +29,6 @@ import org.lable.oss.dynamicconfig.test.FileUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -52,7 +51,7 @@ public class ConfigurationManagerIT {
         URL testUrl = getClass().getResource("/" + INPUT);
         final String testYaml = testUrl.toURI().getPath();
         Configuration sourceConfiguration = new BaseConfiguration();
-        ConcurrentConfiguration configuration = (ConcurrentConfiguration) ConfigurationManager.fromTheseSettings(
+        InitializedConfiguration ic = ConfigurationManager.fromTheseSettings(
                 testYaml,
                 "app",
                 new FileBasedConfigSource(),
@@ -60,6 +59,7 @@ public class ConfigurationManagerIT {
                 sourceConfiguration,
                 defaults
         );
+        Configuration configuration = ic.getConfiguration();
 
         // Overridden default.
         assertThat(configuration.getInt("outer.def-a"), is(123));
@@ -98,7 +98,7 @@ public class ConfigurationManagerIT {
         defaults.setProperty("outer.branch-a.x", "x");
 
         Configuration sourceConfiguration = new BaseConfiguration();
-        ConcurrentConfiguration configuration = (ConcurrentConfiguration) ConfigurationManager.fromTheseSettings(
+        InitializedConfiguration ic = ConfigurationManager.fromTheseSettings(
                 dir.resolve("root.yaml").toString(),
                 "app",
                 new FileBasedConfigSource(),
@@ -106,6 +106,8 @@ public class ConfigurationManagerIT {
                 sourceConfiguration,
                 defaults
         );
+
+        Configuration configuration = ic.getConfiguration();
 
         assertThat(configuration.getString("outer.branch-a.z"), is(nullValue()));
 

@@ -20,6 +20,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
+import org.lable.oss.dynamicconfig.core.InitializedConfiguration;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
 import javax.inject.Provider;
@@ -54,7 +55,8 @@ public class ConfigurationProvider implements Provider<Configuration> {
     public Configuration get() {
         Configuration result;
         try {
-            result = ConfigurationManager.configureFromProperties(defaults, deserializer);
+            InitializedConfiguration ic = ConfigurationManager.configureFromProperties(defaults, deserializer);
+            result = ic.getConfiguration();
         } catch (ConfigurationException e) {
             // Treat a failure to bootstrap the configuration as fatal.
             throw new RuntimeException(e);
