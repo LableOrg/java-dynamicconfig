@@ -22,6 +22,11 @@ To create and update configuration resources we use a
 [simple command line script](https://github.com/LableOrg/mrconfig) deployed on a server accessible 
 via SSH, but any tool or service that can update ZooKeeper nodes should work.
 
+## Usage examples
+
+A set of minimal working examples is 
+[available here](https://github.com/jdhoek/java-dynamicconfig-examples).
+
 ## Bootstrapping Dynamic Config
 
 Dynamic Config is designed to to be used in situations where multiple web applications are run on 
