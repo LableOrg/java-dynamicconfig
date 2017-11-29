@@ -107,12 +107,11 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
 
         if (copyQuorumTo != null) {
             this.copyQuorumTo = copyQuorumTo;
+            defaults.setProperty(copyQuorumTo, quorum);
         }
 
         this.changeListener = changeListener;
         this.quorum = quorum;
-
-        defaults.setProperty(copyQuorumTo, quorum);
 
         zookeeperConnection = new MonitoringZookeeperConnection(quorum, znode, changeListener);
         executorService = Executors.newSingleThreadExecutor();
