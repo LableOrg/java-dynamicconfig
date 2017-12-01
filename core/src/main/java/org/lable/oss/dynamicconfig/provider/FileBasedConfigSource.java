@@ -74,7 +74,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
         }
 
         this.rootDir = Paths.get(rootConfigFile).getParent();
-        if (!Files.isDirectory(rootDir)) {
+        if (rootDir == null || !Files.isDirectory(rootDir)) {
             throw new ConfigurationException("Parameter configDir is not a directory (" + rootConfigFile + ").");
         }
 
