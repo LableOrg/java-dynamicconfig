@@ -55,9 +55,9 @@ public class MonitoringZookeeperConnection implements Watcher, Closeable, Runnab
     ZooKeeper zooKeeper;
 
     State state;
+
     int retryCounter;
     int retryWait;
-
     public MonitoringZookeeperConnection(String[] quorum, String chroot, ConfigChangeListener changeListener) {
         if (chroot == null) {
             this.connectString = String.join(",", quorum);
@@ -126,6 +126,10 @@ public class MonitoringZookeeperConnection implements Watcher, Closeable, Runnab
                 MAINTENANCE_TIMER_INTERVAL,
                 MAINTENANCE_TIMER_INTERVAL
         );
+    }
+
+    public State getState() {
+        return state;
     }
 
     /**

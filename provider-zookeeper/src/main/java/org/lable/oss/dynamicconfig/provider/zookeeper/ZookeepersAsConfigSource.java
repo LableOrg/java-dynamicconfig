@@ -20,6 +20,7 @@ import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
+import org.lable.oss.dynamicconfig.provider.zookeeper.MonitoringZookeeperConnection.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +117,15 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         zookeeperConnection = new MonitoringZookeeperConnection(quorum, znode, changeListener);
         executorService = Executors.newSingleThreadExecutor();
         executorService.execute(zookeeperConnection);
+
+        // Wait for 'run' to have been called on the new thread.
+        while (zookeeperConnection.getState() == State.STARTING) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override
