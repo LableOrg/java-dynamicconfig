@@ -21,11 +21,11 @@
   <parent>
     <groupId>org.lable.oss.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>2.6-beta3-SNAPSHOT</version>
+    <version>2.6-beta3</version>
   </parent>
 
   <artifactId>dynamic-config-core</artifactId>
-  <version>2.6-beta3-SNAPSHOT</version>
+  <version>2.6-beta3</version>
   <packaging>jar</packaging>
 
   <name>Dynamic configuration :: Core library</name>
