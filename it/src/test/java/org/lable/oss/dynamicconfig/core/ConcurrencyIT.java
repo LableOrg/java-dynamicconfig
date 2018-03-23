@@ -42,9 +42,10 @@ public class ConcurrencyIT {
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".file.path", configFile.toAbsolutePath().toString());
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("test", -1);
-        final Configuration configuration = ConfigurationManager.configureFromProperties(
+        final InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
+        final Configuration configuration = ic.getConfiguration();
 
         final CountDownLatch ready = new CountDownLatch(threadCount + 1);
         final CountDownLatch start = new CountDownLatch(1);

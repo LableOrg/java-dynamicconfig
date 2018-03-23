@@ -15,6 +15,13 @@
  */
 package org.lable.oss.dynamicconfig.provider.zookeeper;
 
+import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeepersAsConfigSource.nameToZnodeName;
+import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeepersAsConfigSource.znodeNameToName;
+
 public class ZookeepersAsConfigSourceTest {
 //    @Ignore
 //    @Test
@@ -56,5 +63,19 @@ public class ZookeepersAsConfigSourceTest {
 //        config.setProperty("znode", "/path/node");
 //        source.configure(config);
 //    }
+
+    @Test
+    public void znodeNameToNameTest() {
+        assertThat(znodeNameToName("/includes--conf.yaml"), is("includes/conf.yaml"));
+        assertThat(znodeNameToName("/conf.yaml"), is("conf.yaml"));
+    }
+
+    @Test
+    public void nameToZnodeNameTest() {
+        assertThat(nameToZnodeName("includes/conf.yaml"), is("/includes--conf.yaml"));
+        assertThat(nameToZnodeName("/includes/conf.yaml"), is("/includes--conf.yaml"));
+        assertThat(nameToZnodeName("conf.yaml"), is("/conf.yaml"));
+        assertThat(nameToZnodeName("/conf.yaml"), is("/conf.yaml"));
+    }
 
 }

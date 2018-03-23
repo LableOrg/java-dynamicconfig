@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.Precomputed;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
+import org.lable.oss.dynamicconfig.core.InitializedConfiguration;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 
 import java.util.concurrent.TimeUnit;
@@ -78,9 +79,10 @@ public class ZookeeperAsConfigSourceDisruptedIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        Configuration configuration = ConfigurationManager.configureFromProperties(
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
+        Configuration configuration = ic.getConfiguration();
 
         final AtomicInteger count = new AtomicInteger(0);
         Precomputed<String> precomputed = Precomputed.monitorByUpdate(

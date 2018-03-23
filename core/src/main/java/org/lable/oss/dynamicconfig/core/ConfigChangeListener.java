@@ -28,5 +28,5 @@ public interface ConfigChangeListener {
      * @param name        Name of the configuration part.
      * @param inputStream Input stream containing the changed data.
      */
-    void changed(String name, InputStream inputStream) throws ConfigurationException;
+    void changed(String name, InputStream inputStream);
 }

@@ -41,6 +41,7 @@
     <module>core</module>
     <module>servlet-util</module>
     <module>provider-zookeeper</module>
+    <module>zookeeper-connection</module>
     <module>serialization-json</module>
     <module>serialization-yaml</module>
     <module>it</module>

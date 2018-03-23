@@ -29,9 +29,10 @@ public class BasicUseIT {
     public void noDefaultsClasspathTest() throws ConfigurationException {
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
-        Configuration configuration = ConfigurationManager.configureFromProperties(
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 new YamlDeserializer()
         );
+        Configuration configuration = ic.getConfiguration();
 
         assertThat(configuration.getString("type.string"), is("Okay"));
     }
@@ -44,9 +45,10 @@ public class BasicUseIT {
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");
 
-        Configuration configuration = ConfigurationManager.configureFromProperties(
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
+        Configuration configuration = ic.getConfiguration();
 
         assertThat(configuration.getString("type.string"), is("Okay"));
         assertThat(configuration.getString("only.in.defaults"), is("XXX"));

@@ -20,30 +20,22 @@ import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
-import org.lable.oss.dynamicconfig.provider.zookeeper.MonitoringZookeeperConnection.State;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.lable.oss.dynamicconfig.zookeeper.MonitoringZookeeperConnection;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Retrieve configuration from a Zookeeper quorum, and maintain a watch for updates.
  */
 public class ZookeepersAsConfigSource implements ConfigurationSource {
-    private final static Logger logger = LoggerFactory.getLogger(ZookeepersAsConfigSource.class);
-
     String[] quorum;
     String copyQuorumTo;
 
     ConfigChangeListener changeListener;
-    ExecutorService executorService;
     MonitoringZookeeperConnection zookeeperConnection;
 
     /**
@@ -114,33 +106,29 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         this.changeListener = changeListener;
         this.quorum = quorum;
 
-        zookeeperConnection = new MonitoringZookeeperConnection(quorum, znode, changeListener);
-        executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(zookeeperConnection);
-
-        // Wait for 'run' to have been called on the new thread.
-        while (zookeeperConnection.getState() == State.STARTING) {
-            try {
-                TimeUnit.MILLISECONDS.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
+        zookeeperConnection = new MonitoringZookeeperConnection(
+                quorum,
+                znode,
+                changeListener::changed
+        );
     }
 
     @Override
     public void listen(String name) {
-        zookeeperConnection.listen(name);
+        String znode = nameToZnodeName(name);
+        zookeeperConnection.listen(znode);
     }
 
     @Override
     public void stopListening(String name) {
-        zookeeperConnection.stopListening(name);
+        String znode = nameToZnodeName(name);
+        zookeeperConnection.stopListening(znode);
     }
 
     @Override
     public InputStream load(String name) throws ConfigurationException {
-        Optional<InputStream> is = zookeeperConnection.load(name);
+        String znode = nameToZnodeName(name);
+        Optional<InputStream> is = zookeeperConnection.load(znode);
 
         if (!is.isPresent()) {
             throw new ConfigurationException("Failed to load " + name + ".");
@@ -155,11 +143,15 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     @Override
     public void close() throws IOException {
         zookeeperConnection.close();
-        executorService.shutdownNow();
-        try {
-            executorService.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    }
+
+    static String nameToZnodeName(String name) {
+        if (name.startsWith("/")) name = name.substring(1);
+
+        return "/" + name.replace("/", "--");
+    }
+
+    static String znodeNameToName(String znode) {
+        return znode.substring(1).replace("--", "/");
     }
 }

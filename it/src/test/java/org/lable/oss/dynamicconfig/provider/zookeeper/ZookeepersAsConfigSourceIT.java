@@ -18,39 +18,26 @@ package org.lable.oss.dynamicconfig.provider.zookeeper;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.ServerConfig;
-import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.Precomputed;
-import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
-import org.lable.oss.dynamicconfig.core.ConfigurationManager;
-import org.lable.oss.dynamicconfig.core.ConfigurationResult;
+import org.lable.oss.dynamicconfig.core.*;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.lable.oss.dynamicconfig.core.ConfigurationManager.*;
-import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.connect;
-import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.deleteNode;
-import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.setData;
+import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.*;
 
 @Ignore
 public class ZookeepersAsConfigSourceIT {
@@ -134,7 +121,12 @@ public class ZookeepersAsConfigSourceIT {
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         final List<String> results = new ArrayList<>();
         ConfigChangeListener listener = (name, is) -> {
-            ConfigurationResult conf = deserializer.deserialize(is);
+            ConfigurationResult conf;
+            try {
+                conf = deserializer.deserialize(is);
+            } catch (ConfigurationException e) {
+                return;
+            }
             String key = conf.getConfiguration().getString("key");
             results.add(key);
         };
@@ -190,9 +182,10 @@ public class ZookeepersAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        Configuration configuration = ConfigurationManager.configureFromProperties(
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
+        Configuration configuration = ic.getConfiguration();
 
         final AtomicInteger count = new AtomicInteger(0);
         Precomputed<String> precomputed = Precomputed.monitorByUpdate(
@@ -234,9 +227,10 @@ public class ZookeepersAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        Configuration configuration = ConfigurationManager.configureFromProperties(
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
+        Configuration configuration = ic.getConfiguration();
 
         assertThat(configuration.getString("key"), is("DEFAULT"));
 

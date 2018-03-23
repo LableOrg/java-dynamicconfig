@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.lable.oss.dynamicconfig.provider.zookeeper;
+package org.lable.oss.dynamicconfig.zookeeper;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -21,14 +21,13 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.lable.oss.dynamicconfig.zookeeper.MonitoringZookeeperConnection;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -36,38 +35,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class MonitoringZookeeperConnectionIT {
-    @Test
-    @Ignore
-    public void test() throws InterruptedException {
-        String[] quorum = new String[]{"tzka", "tzkb", "tzkc"};
-        String chroot = "jeroen";
-        MonitoringZookeeperConnection connection = new MonitoringZookeeperConnection(
-                quorum,
-                chroot,
-                (name, inputStream) -> System.out.println(name)
-        );
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(connection);
-
-        Optional<InputStream> is = connection.load("root.yaml");
-        if (!is.isPresent()) fail();
-
-        String content = new Scanner(is.get()).useDelimiter("\\A").next();
-
-        System.out.println(content);
-
-        connection.listen("root.yaml");
-        connection.listen("inc1.yaml");
-
-        for (int i = 0; i < 1000; i++) {
-            TimeUnit.MILLISECONDS.sleep(500);
-            if (i % 100 == 0) System.out.println(i);
-        }
-
-        assertThat("x", is("x"));
-    }
-
     @Test
     @Ignore
     public void test2() throws IOException, InterruptedException, KeeperException {
