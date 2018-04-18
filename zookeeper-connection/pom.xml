@@ -21,11 +21,11 @@
   <parent>
     <groupId>org.lable.oss.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>2.6-beta4-SNAPSHOT</version>
+    <version>2.6-beta4</version>
   </parent>
 
   <artifactId>zookeeper-connection</artifactId>
-  <version>2.6-beta4-SNAPSHOT</version>
+  <version>2.6-beta4</version>
   <packaging>jar</packaging>
 
   <name>Dynamic configuration :: ZooKeeper connection</name>
