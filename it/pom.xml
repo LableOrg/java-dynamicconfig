@@ -21,11 +21,11 @@
   <parent>
     <groupId>org.lable.oss.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>2.6-beta5-SNAPSHOT</version>
+    <version>2.6-beta5</version>
   </parent>
 
   <artifactId>dynamic-config-it</artifactId>
-  <version>2.6-beta5-SNAPSHOT</version>
+  <version>2.6-beta5</version>
   <packaging>pom</packaging>
 
   <name>Dynamic configuration :: Integration tests</name>
