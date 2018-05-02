@@ -49,13 +49,13 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     private final Lock writeLock = lock.writeLock();
 
     final CombinedConfiguration wrapped;
-    final ConfigurationSource configurationSource;
+    final Closeable configurationSource;
 
     final static String NO_MODIFICATION_MESSAGE =
             "This configuration class does not permit modification, " +
             "except through #updateConfiguration(String, Configuration).";
 
-    public ConcurrentConfiguration(CombinedConfiguration wrapped, ConfigurationSource configurationSource) {
+    public ConcurrentConfiguration(CombinedConfiguration wrapped, Closeable configurationSource) {
         this.wrapped = wrapped;
         this.configurationSource = configurationSource;
         logger.info("Dynamic Configuration instance created.");

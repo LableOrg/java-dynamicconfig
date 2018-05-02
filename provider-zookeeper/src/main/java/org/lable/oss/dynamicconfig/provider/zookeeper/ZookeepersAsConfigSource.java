@@ -109,7 +109,11 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
         zookeeperConnection = new MonitoringZookeeperConnection(
                 quorum,
                 znode,
-                changeListener::changed
+                (name, inputStream) -> {
+                    // Consequently strip the leading '/'.
+                    if (name.startsWith("/")) name = name.substring(1);
+                    changeListener.changed(name, inputStream);
+                }
         );
     }
 
