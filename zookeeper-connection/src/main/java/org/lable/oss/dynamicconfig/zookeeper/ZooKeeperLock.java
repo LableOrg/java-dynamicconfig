@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
-public class ZookeeperLock {
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperLock.class);
+public class ZooKeeperLock {
+    private static final Logger logger = LoggerFactory.getLogger(ZooKeeperLock.class);
 
     static String ZNODE;
     static String QUEUE_NODE;
@@ -42,7 +42,7 @@ public class ZookeeperLock {
 
     protected State state = State.UNLOCKED;
 
-    ZookeeperLock(ZooKeeper zooKeeper, String znode) {
+    ZooKeeperLock(ZooKeeper zooKeeper, String znode) {
         ZNODE = znode;
         QUEUE_NODE = znode + "/queue";
         this.zookeeper = zooKeeper;

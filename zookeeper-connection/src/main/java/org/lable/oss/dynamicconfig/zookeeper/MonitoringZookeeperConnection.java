@@ -55,6 +55,7 @@ public class MonitoringZookeeperConnection implements Closeable {
     final Watcher watcher;
     final Queue<Task> jobQueue;
     final ScheduledExecutorService executor;
+    final Queue<ZooKeeperConnectionObserver> observers = new ConcurrentLinkedQueue<>();
 
     CompletableFuture<Void> connectionTask;
     Future<?> jobRunner;
@@ -65,6 +66,14 @@ public class MonitoringZookeeperConnection implements Closeable {
 
     int retryCounter;
     int retryWait;
+
+    public MonitoringZookeeperConnection(String quorum) {
+        this(quorum.split(","), null, null);
+    }
+
+    public MonitoringZookeeperConnection(String[] quorum) {
+        this(quorum, null, null);
+    }
 
     /**
      * Create a new {@link MonitoringZookeeperConnection}.
@@ -86,7 +95,9 @@ public class MonitoringZookeeperConnection implements Closeable {
         logger.info("Monitoring: {}", connectString);
 
         this.state = State.CONNECTING;
-        this.changeListener = changeListener;
+        this.changeListener = changeListener == null
+                ? (name, inputStream) -> { /* No-op. */ }
+                : changeListener;
         this.jobQueue = new ConcurrentLinkedQueue<>();
         this.monitoredFiles = new HashMap<>();
         this.identityString = "MonitoringZKConn " + chroot;
@@ -172,6 +183,14 @@ public class MonitoringZookeeperConnection implements Closeable {
         jobQueue.add(task);
     }
 
+    public void registerObserver(ZooKeeperConnectionObserver observer) {
+        observers.add(observer);
+    }
+
+    public void deregisterObserver(ZooKeeperConnectionObserver observer) {
+        observers.remove(observer);
+    }
+
     /**
      * Get the current state of the connection to the ZooKeeper quorum.
      *
@@ -179,6 +198,21 @@ public class MonitoringZookeeperConnection implements Closeable {
      */
     public State getState() {
         return state;
+    }
+
+    public ZooKeeper getActiveConnection() {
+        if (state != State.LIVE) {
+            try {
+                logger.info("Not connected.");
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            // Try again, after waiting a little while.
+            return getActiveConnection();
+        }
+
+        return this.zooKeeper;
     }
 
     /**
@@ -314,8 +348,8 @@ public class MonitoringZookeeperConnection implements Closeable {
         }
     }
 
-    public ZookeeperLock prepareLock(String znode) {
-        return new ZookeeperLock(zooKeeper, LOCKING_NODES + znode);
+    public ZooKeeperLock prepareLock(String znode) {
+        return new ZooKeeperLock(zooKeeper, LOCKING_NODES + znode);
     }
 
     @Override
@@ -389,7 +423,7 @@ public class MonitoringZookeeperConnection implements Closeable {
      * {@link #LIVE} upon reconnection. State {@link #CLOSED} is entered when this class is finally closed and cannot
      * be reopened (implying a shutdown of the application).
      */
-    enum State {
+    public enum State {
         /**
          * (Re)connecting to the ZooKeeper quorum.
          */
@@ -420,6 +454,7 @@ public class MonitoringZookeeperConnection implements Closeable {
                     // Connection (re-)established.
                     resetRetryCounters();
                     MonitoringZookeeperConnection.this.state = State.LIVE;
+                    observers.forEach(ZooKeeperConnectionObserver::connected);
                     switch (type) {
                         case NodeCreated:
                             logger.info("Our configuration parent znode was created (why was it gone?).");
@@ -435,12 +470,14 @@ public class MonitoringZookeeperConnection implements Closeable {
                     break;
                 case Disconnected:
                     logger.warn("Disconnected from Zookeeper quorum, reconnecting…");
+                    observers.forEach(ZooKeeperConnectionObserver::disconnected);
                     MonitoringZookeeperConnection.this.state = State.CONNECTING;
                     // The Zookeeper instance will automatically attempt reconnection.
                     waitBeforeRetrying();
                     break;
                 case Expired:
                     logger.warn("Connection to Zookeeper quorum expired. Attempting to reconnect…");
+                    observers.forEach(ZooKeeperConnectionObserver::disconnected);
                     MonitoringZookeeperConnection.this.state = State.CONNECTING;
                     // The Zookeeper instance is no longer valid. We have to reconnect ourselves.
                     connect();
