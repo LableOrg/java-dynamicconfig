@@ -48,17 +48,6 @@ public class ZooKeeperLock {
         this.zookeeper = zooKeeper;
     }
 
-    /**
-     * Make sure the required znodes are present on the quorum.
-     *
-     * @param zookeeper ZooKeeper connection to use.
-     * @param znode     Base-path for our znodes.
-     */
-    void ensureRequiredZnodesExist(ZooKeeper zookeeper, String znode) throws KeeperException, InterruptedException {
-        //mkdirp(zookeeper, znode);
-        //createIfNotThere(zookeeper, QUEUE_NODE);
-    }
-
     public void lock() throws IOException {
         if (state == State.LOCKED) return;
 
@@ -98,7 +87,7 @@ public class ZooKeeperLock {
      */
     static String acquireLock(ZooKeeper zookeeper, String lockNode) throws KeeperException, InterruptedException {
         // Inspired by the queueing algorithm suggested here:
-        // http://zookeeper.apache.org/doc/trunk/recipes.html#sc_recipes_Queues
+        // http://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Queues
 
         // Acquire a place in the queue by creating an ephemeral, sequential znode.
         String placeInLine = takeQueueTicket(zookeeper, lockNode);
@@ -260,6 +249,4 @@ public class ZooKeeperLock {
         LOCKED,
         UNLOCKED
     }
-
-
 }

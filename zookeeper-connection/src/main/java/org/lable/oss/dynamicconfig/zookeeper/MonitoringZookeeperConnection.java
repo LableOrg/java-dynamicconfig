@@ -26,7 +26,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -46,7 +45,7 @@ public class MonitoringZookeeperConnection implements Closeable {
 
     static final String LOCKING_NODES = "/locks";
 
-    static final long MAINTENANCE_TIMER_INTERVAL = TimeUnit.MINUTES.toMillis(5);
+    static final long MAINTENANCE_TIMER_INTERVAL = TimeUnit.SECONDS.toSeconds(10);
 
     final String connectString;
     final Map<String, NodeState> monitoredFiles;
@@ -63,6 +62,7 @@ public class MonitoringZookeeperConnection implements Closeable {
     ZooKeeper zooKeeper;
 
     State state;
+    boolean runMaintenanceTasksNow;
 
     int retryCounter;
     int retryWait;
@@ -99,7 +99,7 @@ public class MonitoringZookeeperConnection implements Closeable {
                 ? (name, inputStream) -> { /* No-op. */ }
                 : changeListener;
         this.jobQueue = new ConcurrentLinkedQueue<>();
-        this.monitoredFiles = new HashMap<>();
+        this.monitoredFiles = new ConcurrentHashMap<>();
         this.identityString = "MonitoringZKConn " + chroot;
         this.watcher = new MZKWatcher();
 
@@ -270,7 +270,7 @@ public class MonitoringZookeeperConnection implements Closeable {
         NodeState nodeState;
         if (this.monitoredFiles.containsKey(node)) {
             nodeState = this.monitoredFiles.get(node);
-            nodeState.monitored = true;
+            nodeState.markAsMonitored();
         } else {
             nodeState = new NodeState(node);
             this.monitoredFiles.put(node, nodeState);
@@ -290,15 +290,18 @@ public class MonitoringZookeeperConnection implements Closeable {
 
         NodeState nodeState = monitoredFiles.get(znode);
         if (nodeState == null) {
-            logger.info("Watcher triggered ({}) for unknown node {}.", eventType, znode);
+            logger.warn("Watcher triggered ({}) for unknown node {}.", eventType, znode);
             return;
         }
 
         // Old watches of parts we are no longer interested in.
-        if (!nodeState.monitored) {
-            nodeState.watcherState = WatcherState.NO_WATCHER;
+        if (!nodeState.isMonitored()) {
+            nodeState.setWatcherState(WatcherState.NO_WATCHER);
             return;
-        }        nodeState.watcherState = WatcherState.NEEDS_WATCHER;
+        }
+
+        // This nodes watcher was triggered, so it needs to be reset.
+        nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
 
         switch (eventType) {
             case None:
@@ -308,17 +311,20 @@ public class MonitoringZookeeperConnection implements Closeable {
             case NodeDeleted:
                 logger.error("Watched configuration part deleted! Keeping the last-known version in memory until this" +
                         " part is restored, or if all references to this part are removed from the config.");
+                nodeState.markForReloading();
                 break;
             case NodeCreated:
             case NodeDataChanged:
                 try {
                     byte[] data = zooKeeper.getData(znode, false, null);
                     changeListener.changed(znode, new ByteArrayInputStream(data));
+                    nodeState.markAsReloaded();
                 } catch (KeeperException e) {
                     logger.error(
-                            "Failed to read data from znode " + znode + "! Will attempt to re-set later.",
+                            "Failed to read data from znode " + znode + "! Will attempt to reload later.",
                             e
                     );
+                    nodeState.markForReloading();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -329,14 +335,23 @@ public class MonitoringZookeeperConnection implements Closeable {
     }
 
     synchronized void attemptToSetWatcher(NodeState nodeState) {
-        if (nodeState == null || nodeState.watcherState == WatcherState.HAS_WATCHER) return;
+        if (nodeState == null || nodeState.getWatcherState() == WatcherState.HAS_WATCHER) return;
 
         try {
-            zooKeeper.exists(nodeState.znode, this::processPart);
-            nodeState.watcherState = WatcherState.HAS_WATCHER;
+            nodeState.setWatcherState(WatcherState.HAS_WATCHER);
+
+            if (nodeState.needsReloading()) {
+                logger.info("Reloading znode {}", nodeState.znode);
+                byte[] data = zooKeeper.getData(nodeState.znode, this::processPart, null);
+                changeListener.changed(nodeState.znode, new ByteArrayInputStream(data));
+                nodeState.markAsReloaded();
+            } else {
+                logger.info("Setting watcher on znode {}", nodeState.znode);
+                zooKeeper.exists(nodeState.znode, this::processPart);
+            }
         } catch (KeeperException e) {
             logger.error("Failed to set watcher for node " + nodeState.znode + "! Will attempt to re-set later.", e);
-            nodeState.watcherState = WatcherState.NEEDS_WATCHER;
+            nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -344,7 +359,7 @@ public class MonitoringZookeeperConnection implements Closeable {
 
     public synchronized void stopListening(String part) {
         if (this.monitoredFiles.containsKey(part)) {
-            this.monitoredFiles.get(part).monitored = false;
+            this.monitoredFiles.get(part).markAsUnmonitored();
         }
     }
 
@@ -373,9 +388,9 @@ public class MonitoringZookeeperConnection implements Closeable {
     synchronized void performMaintenanceTasks() {
         this.monitoredFiles.values().stream()
                 // Only monitored nodes.
-                .filter(nodeState -> nodeState.monitored)
+                .filter(NodeState::isMonitored)
                 // Of those, only nodes that need a watcher.
-                .filter(nodeState -> nodeState.watcherState == WatcherState.NEEDS_WATCHER)
+                .filter(nodeState -> nodeState.getWatcherState() == WatcherState.NEEDS_WATCHER)
                 // Try to (re)set a watcher.
                 .forEach(nodeState -> {
                     logger.warn("Reset watcher on " + nodeState.znode);
@@ -451,8 +466,15 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             switch (state) {
                 case SyncConnected:
-                    // Connection (re-)established.
+                    logger.info("Connection (re-)established.");
                     resetRetryCounters();
+                    MonitoringZookeeperConnection.this.monitoredFiles.values().forEach((nodeState) -> {
+                        if (nodeState.getWatcherState() == WatcherState.HAS_WATCHER) {
+                            nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
+                            nodeState.markForReloading();
+                        }
+                    });
+                    MonitoringZookeeperConnection.this.runMaintenanceTasksNow = true;
                     MonitoringZookeeperConnection.this.state = State.LIVE;
                     observers.forEach(ZooKeeperConnectionObserver::connected);
                     switch (type) {
@@ -540,7 +562,9 @@ public class MonitoringZookeeperConnection implements Closeable {
                     }
 
                     long now = System.currentTimeMillis();
-                    if (maintenanceTaskLastRan + MAINTENANCE_TIMER_INTERVAL < now) {
+                    if (monitoringZookeeperConnection.runMaintenanceTasksNow ||
+                            maintenanceTaskLastRan + MAINTENANCE_TIMER_INTERVAL < now) {
+                        monitoringZookeeperConnection.runMaintenanceTasksNow = false;
                         monitoringZookeeperConnection.performMaintenanceTasks();
                         maintenanceTaskLastRan = now;
                     }
@@ -549,15 +573,52 @@ public class MonitoringZookeeperConnection implements Closeable {
         }
     }
 
+    /**
+     * Current state of a monitored node.
+     */
     static class NodeState {
         private final String znode;
-        boolean monitored;
-        WatcherState watcherState;
+        private boolean needsReloading;
+        private boolean monitored;
+        private WatcherState watcherState;
 
         public NodeState(String znode) {
             this.znode = znode;
             this.monitored = true;
+            this.needsReloading = false;
             this.watcherState = WatcherState.NO_WATCHER;
+        }
+
+        void markForReloading() {
+            this.needsReloading = true;
+        }
+
+        void markAsReloaded() {
+            this.needsReloading = false;
+        }
+
+        boolean needsReloading() {
+            return this.needsReloading;
+        }
+
+        void markAsUnmonitored() {
+            this.monitored = false;
+        }
+
+        void markAsMonitored() {
+            this.monitored = true;
+        }
+
+        boolean isMonitored() {
+            return this.monitored;
+        }
+
+        WatcherState getWatcherState() {
+            return this.watcherState;
+        }
+
+        void setWatcherState(WatcherState watcherState) {
+            this.watcherState = watcherState;
         }
 
         enum WatcherState {
