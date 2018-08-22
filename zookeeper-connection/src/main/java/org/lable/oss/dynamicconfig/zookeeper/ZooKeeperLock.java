@@ -22,60 +22,138 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 
-public class ZooKeeperLock {
+/**
+ * A locking mechanism that uses a ZooKeeper quorum to acquire an exclusive claim.
+ * <p>
+ * The method used is inspired by the queueing algorithm suggested
+ * <a href="http://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Queues">in
+ * the ZooKeeper documentation</a>.
+ */
+public class ZooKeeperLock implements Lock {
     private static final Logger logger = LoggerFactory.getLogger(ZooKeeperLock.class);
 
     static String ZNODE;
     static String QUEUE_NODE;
-    final static String LOCKING_TICKET = "nr-00000000000000";
 
+    static final String LOCKING_TICKET = "nr-00000000000000";
     static final Random random = new Random();
 
-    final ZooKeeper zookeeper;
+    final Supplier<ZooKeeper> zooKeeperSupplier;
 
     protected State state = State.UNLOCKED;
 
-    ZooKeeperLock(ZooKeeper zooKeeper, String znode) {
+    /**
+     * Construct a new {@link ZooKeeperLock}.
+     *
+     * @param zooKeeperSupplier Provide a connection to the ZooKeeper quorum.
+     * @param znode ZooKeeper node to use for the locking queue.
+     */
+    ZooKeeperLock(Supplier<ZooKeeper> zooKeeperSupplier, String znode) {
         ZNODE = znode;
         QUEUE_NODE = znode + "/queue";
-        this.zookeeper = zooKeeper;
+        this.zooKeeperSupplier = zooKeeperSupplier;
     }
 
-    public void lock() throws IOException {
+    @Override
+    public void lock() {
+        try {
+            lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
         if (state == State.LOCKED) return;
 
         try {
-            acquireLock(zookeeper, QUEUE_NODE);
+            acquireLock(zooKeeperSupplier.get(), QUEUE_NODE);
         } catch (KeeperException e) {
-            throw new IOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException(e);
+            logger.warn(
+                    "Failed to acquire ZooKeeper lock due to {}. Sleeping 5s before retrying.",
+                    e.getClass().getName()
+            );
+            TimeUnit.SECONDS.sleep(5);
+            lockInterruptibly();
         }
 
         state = State.LOCKED;
     }
 
-    public void unlock() throws IOException {
+    @Override
+    public boolean tryLock() {
+        if (state == State.LOCKED) return true;
+
+        try {
+            acquireLock(zooKeeperSupplier.get(), QUEUE_NODE, null, true);
+        } catch (KeeperException e) {
+            logger.warn("Failed to acquire ZooKeeper lock due to {}.", e.getClass().getName());
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (TimeoutException e) {
+            return false;
+        }
+
+        state = State.LOCKED;
+        return true;
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        if (state == State.LOCKED) return true;
+
+        try {
+            acquireLock(
+                    zooKeeperSupplier.get(),
+                    QUEUE_NODE,
+                    Instant.now().plus(unit.toMillis(time), ChronoUnit.MILLIS),
+                    false
+            );
+        } catch (KeeperException e) {
+            logger.warn("Failed to acquire ZooKeeper lock due to {}.", e.getClass().getName());
+            return false;
+        } catch (TimeoutException e) {
+            return false;
+        }
+
+        state = State.LOCKED;
+        return true;
+    }
+
+    @Override
+    public void unlock() {
         if (state == State.UNLOCKED) return;
 
         try {
-            releaseTicket(zookeeper, QUEUE_NODE, LOCKING_TICKET);
-        } catch (KeeperException e) {
-            throw new IOException(e);
+            releaseTicket(zooKeeperSupplier.get(), QUEUE_NODE, LOCKING_TICKET);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException(e);
         }
 
         state = State.UNLOCKED;
+    }
+
+    @Override
+    public Condition newCondition() {
+        throw new NotImplementedException();
     }
 
     /**
@@ -85,17 +163,26 @@ public class ZooKeeperLock {
      * @param lockNode  Path to the znode representing the locking queue.
      * @return Name of the first node in the queue.
      */
-    static String acquireLock(ZooKeeper zookeeper, String lockNode) throws KeeperException, InterruptedException {
-        // Inspired by the queueing algorithm suggested here:
-        // http://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Queues
+    static String acquireLock(ZooKeeper zookeeper, String lockNode)
+            throws KeeperException, InterruptedException {
+        try {
+            return acquireLock(zookeeper, lockNode, null, false);
+        } catch (TimeoutException e) {
+            // Not possible if called with `null` for timeLimit.
+            throw new RuntimeException("Impossible exception (you found a bug).", e);
+        }
+    }
 
+    static String acquireLock(ZooKeeper zookeeper, String lockNode, Instant timeLimit, boolean returnIfNotFree)
+            throws KeeperException, InterruptedException, TimeoutException {
         // Acquire a place in the queue by creating an ephemeral, sequential znode.
         String placeInLine = takeQueueTicket(zookeeper, lockNode);
         logger.debug("Acquiring lock, waiting in queue: {}.", placeInLine);
 
         // Wait in the queue until our turn has come.
-        return waitInLine(zookeeper, lockNode, placeInLine);
+        return waitInLine(zookeeper, lockNode, placeInLine, timeLimit, returnIfNotFree);
     }
+
 
     /**
      * Take a ticket for the queue. If the ticket was already claimed by another process,
@@ -123,27 +210,35 @@ public class ZooKeeperLock {
      * @param lockNode  Path to the znode representing the locking queue.
      * @param ticket    Name of the first node in the queue.
      */
-    static void releaseTicket(ZooKeeper zookeeper, String lockNode, String ticket)
-            throws KeeperException, InterruptedException {
-
+    static void releaseTicket(ZooKeeper zookeeper, String lockNode, String ticket) throws InterruptedException {
         logger.debug("Releasing ticket {}.", ticket);
         try {
             zookeeper.delete(lockNode + "/" + ticket, -1);
         } catch (KeeperException.NoNodeException e) {
             // If it the node is already gone, than that is fine.
+        } catch (KeeperException e) {
+            logger.error("Unexpected exception: {}.", e.getClass().getName());
         }
     }
 
     /**
      * Wait in the queue until the znode in front of us changes.
      *
-     * @param zookeeper   ZooKeeper connection to use.
-     * @param lockNode    Path to the znode representing the locking queue.
-     * @param placeInLine Name of our current position in the queue.
+     * @param zookeeper       ZooKeeper connection to use.
+     * @param lockNode        Path to the znode representing the locking queue.
+     * @param placeInLine     Name of our current position in the queue.
+     * @param timeLimit       Wait until this point in time at the latest to acquire the lock. Throw a
+     *                        {@link TimeoutException} after that.
+     * @param returnIfNotFree Immediately exit with a {@link TimeoutException} if the lock cannot be acquired
+     *                        directly (i.e., it is free).
      * @return Name of the first node in the queue, when we are it.
      */
-    static String waitInLine(ZooKeeper zookeeper, String lockNode, String placeInLine)
-            throws KeeperException, InterruptedException {
+    static String waitInLine(ZooKeeper zookeeper,
+                             String lockNode,
+                             String placeInLine,
+                             Instant timeLimit,
+                             boolean returnIfNotFree)
+            throws KeeperException, InterruptedException, TimeoutException {
 
         // Get the list of nodes in the queue, and find out what our position is.
         List<String> children;
@@ -200,6 +295,10 @@ public class ZooKeeperLock {
             placeBeforeUs = children.get(positionInQueue - 1);
         }
 
+        if (returnIfNotFree) {
+            throw new TimeoutException("Someone else holds the lock. Aborting as requested.");
+        }
+
         final CountDownLatch latch = new CountDownLatch(1);
         Stat stat = zookeeper.exists(lockNode + "/" + placeBeforeUs, event -> {
             // If *anything* changes, reevaluate our position in the queue.
@@ -211,10 +310,22 @@ public class ZooKeeperLock {
         // watch it for changes:
         if (stat != null) {
             logger.debug("Watching place in queue before us ({})", placeBeforeUs);
-            latch.await();
+            if (timeLimit == null) {
+                latch.await();
+            } else {
+                long waitFor = Duration.between(Instant.now(), timeLimit).toMillis();
+                if (waitFor <= 0) {
+                    throw new TimeoutException("Acquiring the lock is taking too long.");
+                }
+                boolean timedOut = !latch.await(waitFor, TimeUnit.MILLISECONDS);
+                if (timedOut) {
+                    releaseTicket(zookeeper, lockNode, placeInLine);
+                    throw new TimeoutException("Acquiring the lock is taking too long.");
+                }
+            }
         }
 
-        return waitInLine(zookeeper, lockNode, placeInLine);
+        return waitInLine(zookeeper, lockNode, placeInLine, timeLimit, false);
     }
 
     /**

@@ -364,7 +364,7 @@ public class MonitoringZookeeperConnection implements Closeable {
     }
 
     public ZooKeeperLock prepareLock(String znode) {
-        return new ZooKeeperLock(zooKeeper, LOCKING_NODES + znode);
+        return new ZooKeeperLock(() -> zooKeeper, LOCKING_NODES + znode);
     }
 
     @Override
