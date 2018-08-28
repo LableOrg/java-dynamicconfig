@@ -247,6 +247,19 @@ public class MonitoringZookeeperConnection implements Closeable {
      *             relative to that chroot.
      */
     public void listen(String node) {
+        listen(node, false);
+    }
+
+    /**
+     * Start watching a node for changes. When a change occurs, the {@link NodeChangeListener} passed to this class
+     * during construction will be called.
+     *
+     * @param node          The name of the node. If this class was constructed with a chroot, then the node is
+     *                      relative to that chroot.
+     * @param loadInitially If true, the callback listener will be called with the current contents of the node. If
+     *                      false, the callback won't be triggered until the node changes.
+     */
+    public void listen(String node, boolean loadInitially) {
         if (!isLegalName(node)) {
             logger.error("Configuration source name is not valid ({}).", node);
             return;
@@ -260,13 +273,13 @@ public class MonitoringZookeeperConnection implements Closeable {
                 Thread.currentThread().interrupt();
             }
             // Try again, after waiting a little while.
-            listen(node);
+            listen(node, loadInitially);
         }
 
-        exclusiveListen(node);
+        exclusiveListen(node, loadInitially);
     }
 
-    synchronized void exclusiveListen(String node) {
+    synchronized void exclusiveListen(String node, boolean loadInitially) {
         NodeState nodeState;
         if (this.monitoredFiles.containsKey(node)) {
             nodeState = this.monitoredFiles.get(node);
@@ -276,10 +289,14 @@ public class MonitoringZookeeperConnection implements Closeable {
             this.monitoredFiles.put(node, nodeState);
         }
 
+        if (loadInitially) {
+            nodeState.markForReloading();
+        }
+
         attemptToSetWatcher(nodeState);
     }
 
-    synchronized void processPart(WatchedEvent event) {
+    synchronized void processTriggeredWatcher(WatchedEvent event) {
         if (state == State.CLOSED) return;
 
         EventType eventType = event.getType();
@@ -342,12 +359,12 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             if (nodeState.needsReloading()) {
                 logger.info("Reloading znode {}", nodeState.znode);
-                byte[] data = zooKeeper.getData(nodeState.znode, this::processPart, null);
+                byte[] data = zooKeeper.getData(nodeState.znode, this::processTriggeredWatcher, null);
                 changeListener.changed(nodeState.znode, new ByteArrayInputStream(data));
                 nodeState.markAsReloaded();
             } else {
                 logger.info("Setting watcher on znode {}", nodeState.znode);
-                zooKeeper.exists(nodeState.znode, this::processPart);
+                zooKeeper.exists(nodeState.znode, this::processTriggeredWatcher);
             }
         } catch (KeeperException e) {
             logger.error("Failed to set watcher for node " + nodeState.znode + "! Will attempt to re-set later.", e);
