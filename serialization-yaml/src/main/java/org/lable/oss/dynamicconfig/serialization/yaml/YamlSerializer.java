@@ -33,16 +33,17 @@ import static org.lable.oss.dynamicconfig.core.commonsconfiguration.Objectifier.
  * representation.
  */
 public class YamlSerializer implements HierarchicalConfigurationSerializer {
-    private final DumperOptions yamlOptions = new DumperOptions();
-    private final Yaml yaml = new Yaml(yamlOptions);
+    private final Yaml yaml;
 
     /**
      * Construct a new YamlSerializerDeserializer.
      */
     public YamlSerializer() {
+        DumperOptions yamlOptions = new DumperOptions();
         yamlOptions.setIndent(4);
         // Improves readability by omitting {} where possible, and using indented blocks instead.
         yamlOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        yaml = new Yaml(yamlOptions);
     }
 
     /**
