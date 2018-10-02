@@ -41,6 +41,8 @@ public class YamlSerializer implements HierarchicalConfigurationSerializer {
      */
     public YamlSerializer() {
         yamlOptions.setIndent(4);
+        // Improves readability by omitting {} where possible, and using indented blocks instead.
+        yamlOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
     }
 
     /**
