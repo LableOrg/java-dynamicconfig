@@ -20,7 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -34,11 +36,12 @@ import static java.nio.file.StandardWatchEventKinds.*;
 public class FileWatcher implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(FileWatcher.class);
 
-    private final WatchService watchService;
-    private final Callback callback;
-    private final Path dirPath;
-    private final Set<Path> monitoredFiles;
-    private State state = State.RUNNING;
+    final WatchService watchService;
+    final Callback callback;
+    final Path dirPath;
+    final Set<Path> monitoredFiles;
+    final Map<WatchKey, DirectoryContext> watchedDirectories;
+    State state = State.RUNNING;
 
     /**
      * Construct a new FileWatcher.
@@ -50,18 +53,50 @@ public class FileWatcher implements Runnable {
         this.callback = callback;
         this.dirPath = dirPath;
         this.monitoredFiles = new HashSet<>();
+        this.watchedDirectories = new HashMap<>();
 
         watchService = dirPath.getFileSystem().newWatchService();
-        dirPath.register(watchService, ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE);
     }
 
     public synchronized void listen(Path filePath) {
-        logger.info("Started listening to file for {} changes.", filePath);
+        WatchKey watchKey;
+        Path parentDir = dirPath.resolve(filePath).getParent();
+        boolean alreadyWatched = false;
+        for (DirectoryContext directoryContext : watchedDirectories.values()) {
+            if (directoryContext.getPath().equals(parentDir)) {
+                // Directory already watched.
+                directoryContext.increment();
+                alreadyWatched = true;
+                break;
+            }
+        }
+
+        if (!alreadyWatched) {
+            try {
+                watchKey = parentDir.register(watchService, ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE);
+                // NoSuchFileException
+            } catch (IOException e) {
+                logger.error("Failed to register watcher at path " + parentDir, e);
+                return;
+            }
+            this.watchedDirectories.put(watchKey, new DirectoryContext(parentDir));
+            logger.info("Started listening to directory {} for changes.", parentDir);
+        }
+
         this.monitoredFiles.add(filePath);
     }
 
     public synchronized void stopListening(Path filePath) {
-        this.monitoredFiles.remove(filePath);
+        if (this.monitoredFiles.remove(filePath)) {
+            Path parentDir = dirPath.resolve(filePath.getParent());
+            watchedDirectories.entrySet().removeIf(entry -> {
+                DirectoryContext directoryContext = entry.getValue();
+                if (directoryContext.getPath().equals(parentDir)) {
+                    directoryContext.decrement();
+                }
+                return directoryContext.noFilesWatched();
+            });
+        }
     }
 
     @Override
@@ -77,23 +112,31 @@ public class FileWatcher implements Runnable {
                 // Cf.: https://stackoverflow.com/a/25221600/1641860
                 Thread.sleep(50);
 
-                key.pollEvents().stream()
-                        // Ignore all events that are not 'Path' (file/dir) modifications.
-                        .filter(event -> event.kind().type() == Path.class)
-                        // Now it is safe to cast to WatchEvent<Path> instead of WatchEvent<?>.
-                        .map(event -> {
-                            @SuppressWarnings("unchecked")
-                            WatchEvent<Path> pathEvent = (WatchEvent<Path>) event;
-                            return pathEvent;
-                        })
+                for (WatchEvent<?> event : key.pollEvents()) {
+                    // Ignore all events that are not 'Path' (file/dir) modifications.
+                    if (event.kind().type() != Path.class) continue;
+
+                    // Now it is safe to cast to WatchEvent<Path> instead of WatchEvent<?>.
+                    @SuppressWarnings("unchecked")
+                    WatchEvent<Path> pathEvent = (WatchEvent<Path>) event;
+
+                    Path eventPath = pathEvent.context();
+                    Path eventDir = watchedDirectories.get(key).getPath();
+                    Path relativePath = dirPath.relativize(eventDir).resolve(eventPath);
+
+                    if (eventPath.toFile().isDirectory()) {
+                        System.out.println("!!!!!!");
+                    } else {
                         // Ignore files we're not interested in.
-                        .filter(pathEvent -> isThisOneOfOurTargetFiles(pathEvent, monitoredFiles))
-                        .forEach(pathEvent -> {
-                            Event eventType = Event.eventFromWatchEventKind(pathEvent.kind());
-                            if (eventType != null) {
-                                callback.fileChanged(eventType, pathEvent.context());
-                            }
-                        });
+                        if (!monitoredFiles.contains(relativePath)) continue;
+
+                        Event eventType = Event.eventFromWatchEventKind(pathEvent.kind());
+                        if (eventType != null) {
+                            callback.fileChanged(eventType, relativePath);
+                        }
+                    }
+                }
+
                 key.reset();
                 key = watchService.take();
             }
@@ -108,19 +151,6 @@ public class FileWatcher implements Runnable {
     public void close() throws IOException {
         state = State.SHUTTING_DOWN;
         watchService.close();
-    }
-
-    /**
-     * Java's {@link WatchService} can't watch a single file, only directories and all files in it.
-     * This method checks if the event returned belongs to the file we are interested in.
-     *
-     * @param event          File watcher event.
-     * @param monitoredFiles Files we are interested in (relative to the directory monitored).
-     * @return True if the event was fired for the file we are watching.
-     */
-    static boolean isThisOneOfOurTargetFiles(WatchEvent<Path> event, Set<Path> monitoredFiles) {
-        Path relativePath = event.context();
-        return monitoredFiles.contains(relativePath);
     }
 
     /**
@@ -173,5 +203,30 @@ public class FileWatcher implements Runnable {
     enum State {
         RUNNING,
         SHUTTING_DOWN
+    }
+
+    static class DirectoryContext {
+        int watchedFiles = 1;
+        Path dirPath;
+
+        DirectoryContext(Path dirPath) {
+            this.dirPath = dirPath;
+        }
+
+        Path getPath() {
+            return dirPath;
+        }
+
+        void increment() {
+            watchedFiles++;
+        }
+
+        void decrement() {
+            watchedFiles--;
+        }
+
+        boolean noFilesWatched() {
+            return watchedFiles == 0;
+        }
     }
 }

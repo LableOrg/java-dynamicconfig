@@ -15,9 +15,7 @@
  */
 package org.lable.oss.dynamicconfig.provider.file;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.lable.oss.dynamicconfig.provider.file.FileWatcher.Event;
 import org.lable.oss.dynamicconfig.test.FileUtil;
 
@@ -41,11 +39,10 @@ import static org.junit.Assert.fail;
 public class FileWatcherIT {
     private static Path dir;
 
-    @BeforeClass
-    public static void setup() throws IOException {
+    @Before
+    public void setup() throws IOException {
         dir = Files.createTempDirectory("filewatcherit");
     }
-
 
     @Test
     public void test() throws IOException, InterruptedException {
@@ -116,7 +113,7 @@ public class FileWatcherIT {
 
         // Wait for all expected events to be received.
         if (!latch.await(5L, TimeUnit.SECONDS)) {
-            fail();
+            fail("Received fewer events than expected.");
         }
 
         /*
@@ -143,13 +140,103 @@ public class FileWatcherIT {
         }
     }
 
+    @Test
+    public void testHierarchical() throws IOException, InterruptedException {
+        /*
+            Initial directory state.
+         */
+
+        Files.createFile(dir.resolve("config.yaml"));
+        Files.createDirectory(dir.resolve("includes"));
+        Files.createFile(dir.resolve("includes/1.yaml"));
+        Files.createDirectory(dir.resolve(Paths.get("includes", "sub")));
+        Files.createFile(dir.resolve("includes/sub/2.yaml"));
+
+        /*
+            Setup the watcher.
+         */
+
+        final List<PathEvent> pathEvents = new ArrayList<>();
+
+        // The latch is set to the number of expected events.
+        final CountDownLatch latch = new CountDownLatch(4);
+
+        FileWatcher fileWatcher = new FileWatcher(
+                (event, filePath) -> {
+                    System.out.println(">> " + filePath);
+                    pathEvents.add(new PathEvent(event, filePath));
+                    latch.countDown();
+                },
+                dir
+        );
+
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(fileWatcher);
+
+        /*
+            Execute the test.
+         */
+
+        fileWatcher.listen(Paths.get("includes", "1.yaml"));
+        fileWatcher.listen(Paths.get("includes", "sub", "2.yaml"));
+        fileWatcher.listen(Paths.get("includes", "sub", "3.yaml"));
+        fileWatcher.listen(Paths.get("config.yaml"));
+
+        assertThat(fileWatcher.watchedDirectories.size(), is(3));
+
+        modify(dir.resolve("config.yaml"));
+
+        TimeUnit.SECONDS.sleep(1);
+
+        modify(dir.resolve(Paths.get("includes", "1.yaml")));
+
+        TimeUnit.SECONDS.sleep(1);
+
+        modify(dir.resolve(Paths.get("includes", "sub", "2.yaml")));
+
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        Files.createFile(dir.resolve(Paths.get("includes", "sub", "3.yaml")));
+
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        fileWatcher.stopListening(Paths.get("includes", "1.yaml"));
+
+        // Wait for all expected events to be received.
+        if (!latch.await(5L, TimeUnit.SECONDS)) {
+            fail("Received fewer events than expected.");
+        }
+
+        /*
+            Verify events.
+         */
+
+        assertThat(pathEvents.get(0), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("config.yaml"))));
+        assertThat(pathEvents.get(1), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("includes", "1.yaml"))));
+        assertThat(pathEvents.get(2), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("includes", "sub", "2.yaml"))));
+        assertThat(pathEvents.get(3), is(new PathEvent(Event.FILE_CREATED, Paths.get("includes", "sub", "3.yaml"))));
+
+        assertThat(fileWatcher.watchedDirectories.size(), is(2));
+
+        /*
+            Clean up.
+         */
+
+        fileWatcher.close();
+        executorService.shutdown();
+
+        if (!executorService.awaitTermination(5L, TimeUnit.SECONDS)) {
+            fail();
+        }
+    }
+
     // Arbitrarily modify a file; just to trigger a modification event.
     void modify(Path file) throws IOException {
         Files.write(file, new byte[]{1});
     }
 
-    @AfterClass
-    public static void teardown() throws IOException {
+    @After
+    public void teardown() throws IOException {
         // Remove the testing directory.
         FileUtil.deleteDirAndContents(dir);
     }
