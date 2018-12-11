@@ -35,7 +35,6 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
     String[] quorum;
     String copyQuorumTo;
 
-    ConfigChangeListener changeListener;
     MonitoringZookeeperConnection zookeeperConnection;
 
     /**
@@ -103,15 +102,14 @@ public class ZookeepersAsConfigSource implements ConfigurationSource {
             defaults.setProperty(copyQuorumTo, quorum);
         }
 
-        this.changeListener = changeListener;
         this.quorum = quorum;
 
         zookeeperConnection = new MonitoringZookeeperConnection(
                 quorum,
                 znode,
                 (name, inputStream) -> {
-                    // Consequently strip the leading '/'.
-                    if (name.startsWith("/")) name = name.substring(1);
+                    if (!name.startsWith("/")) name = "/" + name;
+                    name = znodeNameToName(name);
                     changeListener.changed(name, inputStream);
                 }
         );

@@ -74,6 +74,6 @@ public class IncludeReference {
 
     @Override
     public String toString() {
-        return "Include: " + Objects.toString(configPath) + ": " + Objects.toString(name);
+        return "Include: " + configPath + ": " + name;
     }
 }

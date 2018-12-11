@@ -217,6 +217,53 @@ public class ZookeepersAsConfigSourceIT {
     }
 
     @Test
+    public void configurationMonitorIncludedTest() throws Exception {
+        setData(zookeeper, "test", "extends:\n    - inc.yaml\n");
+        setData(zookeeper, "inc.yaml", "\n");
+
+        System.setProperty(LIBRARY_PREFIX + ".type", "zookeeper");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.znode", "/config");
+        System.setProperty(LIBRARY_PREFIX + ".zookeeper.quorum", zookeeperHost);
+        System.setProperty(LIBRARY_PREFIX + "." + APPNAME_PROPERTY, "test");
+        HierarchicalConfiguration defaults = new HierarchicalConfiguration();
+        defaults.setProperty("key", "DEFAULT");
+
+        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+                defaults, new YamlDeserializer()
+        );
+        Configuration configuration = ic.getConfiguration();
+
+        final AtomicInteger count = new AtomicInteger(0);
+        Precomputed<String> precomputed = Precomputed.monitorByUpdate(
+                configuration,
+                config -> {
+                    count.incrementAndGet();
+                    return config.getString("key");
+                }
+        );
+
+        assertThat(precomputed.get(), is("DEFAULT"));
+        assertThat(count.get(), is(1));
+        assertThat(configuration.getString("key"), is("DEFAULT"));
+
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        assertThat(precomputed.get(), is("DEFAULT"));
+        assertThat(count.get(), is(1));
+
+        setData(zookeeper, "inc.yaml", "key: AAA");
+        TimeUnit.MILLISECONDS.sleep(300);
+
+        assertThat(count.get(), is(1));
+        assertThat(configuration.getString("key"), is("AAA"));
+        assertThat(precomputed.get(), is("AAA"));
+        assertThat(count.get(), is(2));
+        assertThat(precomputed.get(), is("AAA"));
+        assertThat(count.get(), is(2));
+    }
+
+
+    @Test
     public void viaInitializerTest() throws Exception {
         setData(zookeeper, "test", "\n");
 

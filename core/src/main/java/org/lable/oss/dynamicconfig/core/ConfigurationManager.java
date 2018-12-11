@@ -131,16 +131,19 @@ public class ConfigurationManager {
         composition = new ConfigurationComposition(defaults);
 
         logger.info("Root config: {}.", rootConfigName);
-        desiredSource.configure(sourceConfiguration, defaults, (name, inputStream) -> {
-            logger.info("New runtime configuration received for configuration part {}.", name);
-            composition.markReferenceAsNeedsLoading(name);
-            load(name, desiredSource, deserializer, composition);
-            concurrentConfiguration.withConfiguration(composition::assembleConfigTree);
-            composition
-                    .getReferences(ref -> ref.getConfigState() == ConfigState.ORPHANED)
-                    .forEach(ref -> desiredSource.stopListening(ref.getName()));
-            composition.getRidOfOrphans();
-        });
+        desiredSource.configure(
+                sourceConfiguration,
+                defaults,
+                (name, inputStream) -> {
+                    logger.info("New runtime configuration received for configuration part {}.", name);
+                    composition.markReferenceAsNeedsLoading(name);
+                    load(name, desiredSource, deserializer, composition);
+                    concurrentConfiguration.withConfiguration(composition::assembleConfigTree);
+                    composition
+                            .getReferences(ref -> ref.getConfigState() == ConfigState.ORPHANED)
+                            .forEach(ref -> desiredSource.stopListening(ref.getName()));
+                    composition.getRidOfOrphans();
+                });
         String normalizedConfigName = desiredSource.normalizeRootConfigName(rootConfigName);
 
         ConfigReference rootReference = load(normalizedConfigName, desiredSource, deserializer, composition);
