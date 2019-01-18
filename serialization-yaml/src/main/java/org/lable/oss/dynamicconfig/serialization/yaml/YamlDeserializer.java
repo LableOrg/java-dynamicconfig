@@ -62,7 +62,7 @@ public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
      */
     @Override
     public ConfigurationResult deserialize(InputStream input) throws ConfigurationException {
-        String content = new Scanner(input).useDelimiter("\\A").next();
+        String content = new Scanner(input, "UTF-8").useDelimiter("\\A").next();
 
         HierarchicalConfiguration configuration = new HierarchicalConfiguration();
         List<IncludeReference> includes = new ArrayList<>();
