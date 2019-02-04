@@ -119,9 +119,9 @@ public class ConfigurationManager {
     }
 
     static InitializedConfiguration initialize(ConfigurationSource desiredSource,
-                                    Configuration sourceConfiguration,
-                                    HierarchicalConfigurationDeserializer deserializer,
-                                    HierarchicalConfiguration defaults) throws ConfigurationException {
+                                               Configuration sourceConfiguration,
+                                               HierarchicalConfigurationDeserializer deserializer,
+                                               HierarchicalConfiguration defaults) throws ConfigurationException {
 
         if (defaults == null) defaults = new HierarchicalConfiguration();
         String rootConfigName = sourceConfiguration.getString(ROOTCONFIG_PROPERTY);

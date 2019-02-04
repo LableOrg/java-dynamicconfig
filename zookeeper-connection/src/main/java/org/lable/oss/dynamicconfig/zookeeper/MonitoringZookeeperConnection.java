@@ -17,6 +17,7 @@ package org.lable.oss.dynamicconfig.zookeeper;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
 import org.lable.oss.dynamicconfig.zookeeper.MonitoringZookeeperConnection.NodeState.WatcherState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -317,8 +319,7 @@ public class MonitoringZookeeperConnection implements Closeable {
             return;
         }
 
-        // This nodes watcher was triggered, so it needs to be reset.
-        nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
+        boolean needsWatcher = true;
 
         switch (eventType) {
             case None:
@@ -333,9 +334,20 @@ public class MonitoringZookeeperConnection implements Closeable {
             case NodeCreated:
             case NodeDataChanged:
                 try {
-                    byte[] data = zooKeeper.getData(znode, false, null);
+                    Stat stat = new Stat();
+                    byte[] data = zooKeeper.getData(znode, false, stat);
+                    Instant mTime = Instant.ofEpochMilli(stat.getMtime());
+
+                    Optional<Instant> lastUpdated = nodeState.getLastUpdated();
+                    if (lastUpdated.isPresent() && !mTime.isAfter(lastUpdated.get())) {
+                        // Watcher triggered multiple times.
+                        logger.warn("Received duplicate watch trigger event for {}. Ignoring it.", znode);
+                        needsWatcher = false;
+                        break;
+                    }
+
                     changeListener.changed(znode, new ByteArrayInputStream(data));
-                    nodeState.markAsReloaded();
+                    nodeState.markAsReloaded(mTime);
                 } catch (KeeperException e) {
                     logger.error(
                             "Failed to read data from znode " + znode + "! Will attempt to reload later.",
@@ -348,7 +360,11 @@ public class MonitoringZookeeperConnection implements Closeable {
                 break;
         }
 
-        attemptToSetWatcher(nodeState);
+        if (needsWatcher) {
+            // This node's watcher was triggered, so it needs to be reset.
+            nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
+            attemptToSetWatcher(nodeState);
+        }
     }
 
     synchronized void attemptToSetWatcher(NodeState nodeState) {
@@ -359,9 +375,12 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             if (nodeState.needsReloading()) {
                 logger.info("Reloading znode {}", nodeState.znode);
-                byte[] data = zooKeeper.getData(nodeState.znode, this::processTriggeredWatcher, null);
+                Stat stat = new Stat();
+                byte[] data = zooKeeper.getData(nodeState.znode, this::processTriggeredWatcher, stat);
+                Instant mTime = Instant.ofEpochMilli(stat.getMtime());
+
                 changeListener.changed(nodeState.znode, new ByteArrayInputStream(data));
-                nodeState.markAsReloaded();
+                nodeState.markAsReloaded(mTime);
             } else {
                 logger.info("Setting watcher on znode {}", nodeState.znode);
                 zooKeeper.exists(nodeState.znode, this::processTriggeredWatcher);
@@ -597,6 +616,7 @@ public class MonitoringZookeeperConnection implements Closeable {
         private final String znode;
         private boolean needsReloading;
         private boolean monitored;
+        private Instant lastUpdate;
         private WatcherState watcherState;
 
         public NodeState(String znode) {
@@ -604,14 +624,16 @@ public class MonitoringZookeeperConnection implements Closeable {
             this.monitored = true;
             this.needsReloading = false;
             this.watcherState = WatcherState.NO_WATCHER;
+            this.lastUpdate = null;
         }
 
         void markForReloading() {
             this.needsReloading = true;
         }
 
-        void markAsReloaded() {
+        void markAsReloaded(Instant mTime) {
             this.needsReloading = false;
+            this.lastUpdate = mTime;
         }
 
         boolean needsReloading() {
@@ -636,6 +658,10 @@ public class MonitoringZookeeperConnection implements Closeable {
 
         void setWatcherState(WatcherState watcherState) {
             this.watcherState = watcherState;
+        }
+
+        Optional<Instant> getLastUpdated() {
+            return Optional.ofNullable(lastUpdate);
         }
 
         enum WatcherState {
