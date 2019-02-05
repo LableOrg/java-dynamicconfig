@@ -18,7 +18,9 @@ package org.lable.oss.dynamicconfig.core;
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
+import java.time.Instant;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,6 +36,10 @@ public class ConfigurationComposition {
      * Internal name used for the special default configuration that can be provided hard-coded.
      */
     private static final String DEFAULT_CONFIG_NAME = "--------";
+
+    public static final String META_MODIFIED_AT = "dc.meta.last-update";
+
+    public static final String META_MODIFIED_TREE = "dc.meta.tree-state";
 
     /**
      * Create a new empty {@link ConfigurationComposition}.
@@ -108,6 +114,7 @@ public class ConfigurationComposition {
     public synchronized void setConfigurationOnReference(ConfigReference reference,
                                                          HierarchicalConfiguration configuration) {
         reference.setConfiguration(configuration);
+        reference.markTimeOfUpdate();
     }
 
     public synchronized ConfigReference markReferenceAsFailedToLoad(String name) {
@@ -145,38 +152,82 @@ public class ConfigurationComposition {
      */
     public synchronized void assembleConfigTree(CombinedConfiguration combinedConfig) {
         combinedConfig.clear();
-        assembleConfigSection(null, combinedConfig, root);
+        assembleConfigSection(combinedConfig, root);
+        setMetadata(combinedConfig);
     }
 
     /**
      * Recursively assemble the combined configuration.
      *
-     * @param path            Path in the configuration object of the current configuration reference.
-     *                        May be {@code null} for the root path.
      * @param combinedConfig  Configuration object to write the configuration to.
      * @param configReference Configuration reference to process.
      */
-    void assembleConfigSection(String path, CombinedConfiguration combinedConfig, ConfigReference configReference) {
-        // Give every configuration part a unique name.
-        String name = (path == null ? "" : path) + "->" + configReference.getName();
+    void assembleConfigSection(CombinedConfiguration combinedConfig, ConfigReference configReference) {
+        walk((path, ref) -> {
+            // Give every configuration part a unique name.
+            String name = (path == null ? "" : path) + "->" + ref.getName();
 
-        if (configReference.configuration != null) {
-            combinedConfig.addConfiguration(configReference.configuration, name, path);
-        }
+            if (ref.configuration != null) {
+                combinedConfig.addConfiguration(ref.configuration, name, path);
+            }
+        });
+    }
 
-        // Includes. These take precedence over the configuration parts that are extended.
+    void setMetadata(CombinedConfiguration combinedConfig) {
+        combinedConfig.setProperty(META_MODIFIED_AT, Instant.now().toString());
+
+        StringBuilder builder = new StringBuilder();
+
+        walk((path, ref) -> {
+            // Ignore the default configuration; it is never updated and hard-coded.
+            if (path == null && ref.getName().equals(DEFAULT_CONFIG_NAME)) return;
+
+            String name = (path == null ? "." : path) + " -> " + ref.getName();
+            builder.append(name);
+
+            for (int i = name.length(); i < 60; i++) {
+                builder.append(' ');
+            }
+            String updated = ref.getLastUpdated().map(Instant::toString).orElse("-");
+            builder.append(" (").append(updated).append(")\n");
+        });
+
+        combinedConfig.setProperty(META_MODIFIED_TREE, builder.toString());
+    }
+
+    /**
+     * Walk the tree of configuration parts and call a supplied method for each part.
+     *
+     * @param referenceConsumer Callback for each configuration reference visited.
+     */
+    void walk(BiConsumer<String, ConfigReference> referenceConsumer) {
+        walk(null, root, referenceConsumer);
+    }
+
+    /**
+     * Walk the tree of configuration parts and call a supplied method for each part.
+     *
+     * @param path              Path in the configuration object of the current configuration reference.
+     *                          May be {@code null} for the root path.
+     * @param configReference   Current configuration reference.
+     * @param referenceConsumer Callback for each configuration reference visited.
+     */
+    void walk(String path, ConfigReference configReference, BiConsumer<String, ConfigReference> referenceConsumer) {
+        referenceConsumer.accept(path, configReference);
+
+        // Includes (configPath is set). These take precedence over the configuration parts that are extended.
         configReference.referencedByMe.forEach((includeReference, reference) -> {
             if (includeReference.getConfigPath() == null) return;
             String newPath = path == null
                     ? includeReference.getConfigPath()
                     : path + "." + includeReference.getConfigPath();
-            assembleConfigSection(newPath, combinedConfig, reference);
+            walk(newPath, reference, referenceConsumer);
         });
 
-        // Extends.
+        // Extends (configPath is not set).
         configReference.referencedByMe.forEach((includeReference, reference) -> {
             if (includeReference.getConfigPath() != null) return;
-            assembleConfigSection(path, combinedConfig, reference);
+            walk(path, reference, referenceConsumer);
         });
     }
 
@@ -252,6 +303,7 @@ public class ConfigurationComposition {
         Map<IncludeReference, ConfigReference> referencedByMe;
         String name;
         ConfigState configState;
+        Instant lastUpdated;
         HierarchicalConfiguration configuration;
 
         ConfigReference(String name) {
@@ -260,6 +312,7 @@ public class ConfigurationComposition {
             this.referencingMe = new HashSet<>();
             this.configState = ConfigState.NEEDS_LOADING;
             this.configuration = null;
+            this.lastUpdated = null;
         }
 
         void addReciprocalReference(IncludeReference includeReference, ConfigReference referencee) {
@@ -295,6 +348,10 @@ public class ConfigurationComposition {
             this.configState = ConfigState.LOADED;
         }
 
+        void markTimeOfUpdate() {
+            this.lastUpdated = Instant.now();
+        }
+
         void markAsFailedToLoad() {
             this.configState = ConfigState.FAILED_TO_LOAD;
         }
@@ -309,6 +366,10 @@ public class ConfigurationComposition {
 
         public ConfigState getConfigState() {
             return configState;
+        }
+
+        public Optional<Instant> getLastUpdated() {
+            return Optional.ofNullable(lastUpdated);
         }
 
         boolean hasReferenceInChain(String name) {
