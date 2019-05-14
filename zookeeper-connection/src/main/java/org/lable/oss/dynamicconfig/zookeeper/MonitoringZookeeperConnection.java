@@ -307,6 +307,8 @@ public class MonitoringZookeeperConnection implements Closeable {
         // Nothing we can do here if the node is unknown.
         if (znode == null) return;
 
+        logger.debug("WatchedEvent: {} -> {}", eventType, znode);
+
         NodeState nodeState = monitoredFiles.get(znode);
         if (nodeState == null) {
             logger.warn("Watcher triggered ({}) for unknown node {}.", eventType, znode);
@@ -502,17 +504,7 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             switch (state) {
                 case SyncConnected:
-                    logger.info("Connection (re-)established.");
-                    resetRetryCounters();
-                    MonitoringZookeeperConnection.this.monitoredFiles.values().forEach((nodeState) -> {
-                        if (nodeState.getWatcherState() == WatcherState.HAS_WATCHER) {
-                            nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
-                            nodeState.markForReloading();
-                        }
-                    });
-                    MonitoringZookeeperConnection.this.runMaintenanceTasksNow = true;
-                    MonitoringZookeeperConnection.this.state = State.LIVE;
-                    observers.forEach(ZooKeeperConnectionObserver::connected);
+
                     switch (type) {
                         case NodeCreated:
                             logger.info("Our configuration parent znode was created (why was it gone?).");
@@ -522,7 +514,24 @@ public class MonitoringZookeeperConnection implements Closeable {
                             break;
                         case NodeDataChanged:
                         case NodeChildrenChanged:
+                            // Probably not relevant.
+                            break;
                         case None:
+                            logger.info(
+                                    "Connection (re-)established ({} {}).",
+                                    MonitoringZookeeperConnection.this.connectString,
+                                    event.getPath()
+                            );
+                            resetRetryCounters();
+                            MonitoringZookeeperConnection.this.monitoredFiles.values().forEach((nodeState) -> {
+                                if (nodeState.getWatcherState() == WatcherState.HAS_WATCHER) {
+                                    nodeState.setWatcherState(WatcherState.NEEDS_WATCHER);
+                                    nodeState.markForReloading();
+                                }
+                            });
+                            MonitoringZookeeperConnection.this.runMaintenanceTasksNow = true;
+                            MonitoringZookeeperConnection.this.state = State.LIVE;
+                            observers.forEach(ZooKeeperConnectionObserver::connected);
                             break;
                     }
                     break;
