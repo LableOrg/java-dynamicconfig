@@ -68,6 +68,7 @@ public class MonitoringZookeeperConnection implements Closeable {
 
     int retryCounter;
     int retryWait;
+    long lastConnectionAttempt = 0;
 
     public MonitoringZookeeperConnection(String quorum) {
         this(quorum.split(","), null, null);
@@ -203,15 +204,27 @@ public class MonitoringZookeeperConnection implements Closeable {
     }
 
     public ZooKeeper getActiveConnection() {
+        return getActiveConnection(TimeUnit.MINUTES.toMillis(1));
+    }
+
+    private ZooKeeper getActiveConnection(long timeout) {
+        if (state == State.CLOSED) throw new RuntimeException("Attempting to reuse closed connection.");
+
         if (state != State.LIVE) {
-            try {
-                logger.info("Not connected.");
-                TimeUnit.MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            if (timeout <= 0) {
+                logger.warn("Forcing reconnection.");
+                connect();
+                return getActiveConnection();
+            } else {
+                try {
+                    logger.info("Not connected, timeout and connection retry in {}ms.", timeout);
+                    TimeUnit.MILLISECONDS.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                // Try again, after waiting a little while.
+                return getActiveConnection(timeout - 100);
             }
-            // Try again, after waiting a little while.
-            return getActiveConnection();
         }
 
         return this.zooKeeper;
@@ -222,6 +235,12 @@ public class MonitoringZookeeperConnection implements Closeable {
      */
     synchronized void connect() {
         if (state != State.CONNECTING) return;
+
+        // Prevent multiple threads from triggering a reconnection.
+        if (System.currentTimeMillis() - lastConnectionAttempt < TimeUnit.SECONDS.toMillis(60)) {
+            logger.warn("Not resetting the connection attempt. The last attempt was made less than a minute ago.");
+            return;
+        }
 
         if (zooKeeper != null) {
             try {
@@ -234,6 +253,7 @@ public class MonitoringZookeeperConnection implements Closeable {
             logger.warn(identityString + ": Failed to connect to Zookeeper quorum, retrying (" + retryCounter + ").");
         }
         try {
+            this.lastConnectionAttempt = System.currentTimeMillis();
             zooKeeper = new ZooKeeper(connectString, 3000, this.watcher);
         } catch (IOException e) {
             waitBeforeRetrying();
@@ -501,6 +521,7 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             Event.KeeperState state = event.getState();
             EventType type = event.getType();
+            logger.info("-------------- {}", event);
 
             switch (state) {
                 case SyncConnected:
@@ -539,6 +560,7 @@ public class MonitoringZookeeperConnection implements Closeable {
                     logger.warn("Disconnected from Zookeeper quorum, reconnecting…");
                     observers.forEach(ZooKeeperConnectionObserver::disconnected);
                     MonitoringZookeeperConnection.this.state = State.CONNECTING;
+                    MonitoringZookeeperConnection.this.lastConnectionAttempt = 0;
                     // The Zookeeper instance will automatically attempt reconnection.
                     waitBeforeRetrying();
                     break;
@@ -546,6 +568,7 @@ public class MonitoringZookeeperConnection implements Closeable {
                     logger.warn("Connection to Zookeeper quorum expired. Attempting to reconnect…");
                     observers.forEach(ZooKeeperConnectionObserver::disconnected);
                     MonitoringZookeeperConnection.this.state = State.CONNECTING;
+                    MonitoringZookeeperConnection.this.lastConnectionAttempt = 0;
                     // The Zookeeper instance is no longer valid. We have to reconnect ourselves.
                     connect();
                     return;
