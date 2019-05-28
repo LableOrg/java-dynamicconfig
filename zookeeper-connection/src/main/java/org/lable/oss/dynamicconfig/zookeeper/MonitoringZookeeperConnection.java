@@ -521,7 +521,6 @@ public class MonitoringZookeeperConnection implements Closeable {
 
             Event.KeeperState state = event.getState();
             EventType type = event.getType();
-            logger.info("-------------- {}", event);
 
             switch (state) {
                 case SyncConnected:
