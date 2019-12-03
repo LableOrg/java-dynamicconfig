@@ -40,6 +40,7 @@
   <modules>
     <module>core</module>
     <module>servlet-util</module>
+    <module>provider-etcd</module>
     <module>provider-zookeeper</module>
     <module>zookeeper-connection</module>
     <module>serialization-json</module>
@@ -52,6 +53,7 @@
   <properties>
     <java.language.level>1.8</java.language.level>
     <zookeeper.version>3.4.6</zookeeper.version>
+    <jetcd-version>0.4.1</jetcd-version>
     <commons.configuration.version>1.10</commons.configuration.version>
     <guice.version>4.0</guice.version>
     <jackson.version>2.7.1</jackson.version>

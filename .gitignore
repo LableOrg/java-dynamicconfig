@@ -10,7 +10,7 @@ Thumbs.db
 # All Maven output goes here, compiled classes, generated code, etc.
 # Ignore only folders named target in root dir and direct child dirs.
 /target/
-*/target/
+**/target/
 
 
 # Your IDE generates project files based on the Maven POM. It is
