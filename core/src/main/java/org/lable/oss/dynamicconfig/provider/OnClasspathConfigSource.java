@@ -44,8 +44,6 @@ public class OnClasspathConfigSource implements ConfigurationSource {
 
     /**
      * {@inheritDoc}
-     * <p>
-     * Expects a parameter "path" containing the path to the configuration file, relative to the classpath.
      */
     @Override
     public void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)

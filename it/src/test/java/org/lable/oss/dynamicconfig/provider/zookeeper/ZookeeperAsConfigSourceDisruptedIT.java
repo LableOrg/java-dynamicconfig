@@ -15,13 +15,13 @@
  */
 package org.lable.oss.dynamicconfig.provider.zookeeper;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.ServerConfig;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.Precomputed;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
@@ -35,14 +35,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.lable.oss.dynamicconfig.core.ConfigurationManager.APPNAME_PROPERTY;
 import static org.lable.oss.dynamicconfig.core.ConfigurationManager.LIBRARY_PREFIX;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.ROOTCONFIG_PROPERTY;
 import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.connect;
 import static org.lable.oss.dynamicconfig.provider.zookeeper.ZookeeperTestUtil.setData;
 
 public class ZookeeperAsConfigSourceDisruptedIT {
     private Thread server;
     private String zookeeperHost;
-    private Configuration testConfig;
     private ZooKeeper zookeeper;
     private ZookeeperTestUtil.ZooKeeperThread zkServer;
 
@@ -55,22 +53,23 @@ public class ZookeeperAsConfigSourceDisruptedIT {
         ServerConfig config = new ServerConfig();
         config.parse(new String[] { clientPort, dataDirectory });
 
-        testConfig = new BaseConfiguration();
-        testConfig.setProperty("quorum", zookeeperHost);
-        testConfig.setProperty("znode", "/config");
-        testConfig.setProperty(APPNAME_PROPERTY, "test");
-        testConfig.setProperty(ROOTCONFIG_PROPERTY, "test");
-
         zkServer = new ZookeeperTestUtil.ZooKeeperThread(config);
         server = new Thread(zkServer);
         server.start();
+
+        TimeUnit.MILLISECONDS.sleep(3000);
 
         zookeeper = connect(zookeeperHost);
     }
 
     @Test
+    @Ignore
     public void disruptedTest() throws Exception {
         setData(zookeeper, "test", "\n");
+        TimeUnit.MILLISECONDS.sleep(3000);
+
+        byte[] x = zookeeper.getData("/config/test", false, null);
+        assertThat(x, is("\n".getBytes()));
 
         System.setProperty(LIBRARY_PREFIX + ".type", "zookeeper");
         System.setProperty(LIBRARY_PREFIX + ".zookeeper.znode", "/config");
@@ -105,14 +104,15 @@ public class ZookeeperAsConfigSourceDisruptedIT {
         setData(zookeeper, "test", "key: AAA");
         TimeUnit.MILLISECONDS.sleep(300);
 
+        byte[] y = zookeeper.getData("/config/test", false, null);
+        assertThat(y, is("key: AAA".getBytes()));
+
         assertThat(count.get(), is(1));
         assertThat(configuration.getString("key"), is("AAA"));
         assertThat(precomputed.get(), is("AAA"));
         assertThat(count.get(), is(2));
         assertThat(precomputed.get(), is("AAA"));
         assertThat(count.get(), is(2));
-
-
     }
 
     @After

@@ -28,7 +28,7 @@ public class BasicUseIT {
     @Test
     public void noDefaultsClasspathTest() throws ConfigurationException {
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
         InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
                 new YamlDeserializer()
         );
@@ -40,7 +40,7 @@ public class BasicUseIT {
     @Test
     public void withDefaultsClasspathTest() throws ConfigurationException {
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".classpath.path", "test.yml");
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");

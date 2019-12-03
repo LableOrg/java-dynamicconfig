@@ -88,7 +88,8 @@ public class FileWatcher implements Runnable {
 
     public synchronized void stopListening(Path filePath) {
         if (this.monitoredFiles.remove(filePath)) {
-            Path parentDir = dirPath.resolve(filePath.getParent());
+            Path fileParent = filePath.getParent();
+            Path parentDir = fileParent == null ? dirPath : dirPath.resolve(fileParent);
             watchedDirectories.entrySet().removeIf(entry -> {
                 DirectoryContext directoryContext = entry.getValue();
                 if (directoryContext.getPath().equals(parentDir)) {

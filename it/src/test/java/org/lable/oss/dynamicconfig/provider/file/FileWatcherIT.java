@@ -53,7 +53,7 @@ public class FileWatcherIT {
         final List<PathEvent> pathEvents = new ArrayList<>();
 
         // The latch is set to the number of expected events.
-        final CountDownLatch latch = new CountDownLatch(7);
+        final CountDownLatch latch = new CountDownLatch(8);
 
         FileWatcher fileWatcher = new FileWatcher(
                 (event, filePath) -> {
@@ -73,6 +73,8 @@ public class FileWatcherIT {
         Files.createFile(dir.resolve("ignored"));
         Files.createFile(dir.resolve("temp.txt"));
         Files.createFile(dir.resolve("temp2.txt"));
+        Files.createDirectory(dir.resolve("sub"));
+        Files.createFile(dir.resolve(Paths.get("sub", "sub.txt")));
 
         TimeUnit.SECONDS.sleep(1);
 
@@ -101,14 +103,25 @@ public class FileWatcherIT {
 
         modify(dir.resolve("temp.txt"));
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.MILLISECONDS.sleep(100);
 
         fileWatcher.stopListening(Paths.get("temp.txt"));
+        fileWatcher.listen(Paths.get("sub", "sub.txt"));
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.MILLISECONDS.sleep(100);
 
         modify(dir.resolve("temp.txt"));
+
+        TimeUnit.MILLISECONDS.sleep(100);
+
         modify(dir.resolve("temp2.txt"));
+
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        modify(dir.resolve(Paths.get("sub", "sub.txt")));
+
+        TimeUnit.MILLISECONDS.sleep(100);
+
         Files.deleteIfExists(dir.resolve("temp2.txt"));
 
         // Wait for all expected events to be received.
@@ -120,13 +133,15 @@ public class FileWatcherIT {
             Verify.
          */
 
+        assertThat(pathEvents.size(), is(8));
         assertThat(pathEvents.get(0), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("temp.txt"))));
         assertThat(pathEvents.get(1), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("temp.txt"))));
         assertThat(pathEvents.get(2), is(new PathEvent(Event.FILE_DELETED, Paths.get("temp.txt"))));
         assertThat(pathEvents.get(3), is(new PathEvent(Event.FILE_CREATED, Paths.get("temp.txt"))));
         assertThat(pathEvents.get(4), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("temp.txt"))));
         assertThat(pathEvents.get(5), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("temp2.txt"))));
-        assertThat(pathEvents.get(6), is(new PathEvent(Event.FILE_DELETED, Paths.get("temp2.txt"))));
+        assertThat(pathEvents.get(6), is(new PathEvent(Event.FILE_MODIFIED, Paths.get("sub", "sub.txt"))));
+        assertThat(pathEvents.get(7), is(new PathEvent(Event.FILE_DELETED, Paths.get("temp2.txt"))));
 
         /*
             Clean up.

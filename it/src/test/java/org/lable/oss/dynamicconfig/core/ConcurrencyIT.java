@@ -39,7 +39,7 @@ public class ConcurrencyIT {
         Files.write(configFile, "test: 0\n".getBytes());
 
         System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "file");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".file.path", configFile.toAbsolutePath().toString());
+        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", configFile.toAbsolutePath().toString());
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("test", -1);
         final InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
