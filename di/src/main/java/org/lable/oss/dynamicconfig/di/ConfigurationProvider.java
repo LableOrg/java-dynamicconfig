@@ -39,6 +39,7 @@ import javax.inject.Singleton;
 public class ConfigurationProvider implements Provider<Configuration> {
     final HierarchicalConfigurationDeserializer deserializer;
     HierarchicalConfiguration defaults;
+    String sourceType;
 
     @Inject
     ConfigurationProvider(HierarchicalConfigurationDeserializer deserializer) {
@@ -50,12 +51,18 @@ public class ConfigurationProvider implements Provider<Configuration> {
         this.defaults = defaults;
     }
 
+    @Inject(optional = true)
+    public void setSourceType(@ConfigurationSourceType String sourceType) {
+        this.sourceType = sourceType;
+    }
 
     @Override
     public Configuration get() {
         Configuration result;
         try {
-            InitializedConfiguration ic = ConfigurationManager.configureFromProperties(defaults, deserializer);
+            InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+                    sourceType, defaults, deserializer
+            );
             result = ic.getConfiguration();
         } catch (ConfigurationException e) {
             // Treat a failure to bootstrap the configuration as fatal.

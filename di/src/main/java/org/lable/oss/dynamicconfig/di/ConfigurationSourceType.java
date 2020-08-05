@@ -23,11 +23,12 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Dependency injection annotation for a {@link org.apache.commons.configuration.Configuration} instance that contains
- * a default set of configuration values that may be overridden by the dynamically loaded configuration.
+ * Dependency injection annotation for a String that explicitly chooses the configuration source. This can be used to
+ * override configuration source type switching based on the value of the system property
+ * {@code org.lable.oss.dynamicconfig.type}.
  */
 @Retention(RUNTIME)
 @Target({PARAMETER})
 @Qualifier
-public @interface ConfigurationDefaults {
+public @interface ConfigurationSourceType {
 }
