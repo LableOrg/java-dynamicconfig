@@ -71,7 +71,8 @@ public class ConfigurationManager {
     }
 
     /**
-     * Use system properties to initialize a configuration instance.
+     * Use system properties to initialize a configuration instance. The source-type will be read from the system
+     * property {@code org.lable.oss.dynamicconfig.type}.
      *
      * @param defaults     Default configuration. Any keys not overridden by the dynamic configuration will remain as
      *                     set here.
@@ -80,14 +81,31 @@ public class ConfigurationManager {
      * @throws ConfigurationException Thrown when the required system properties are not set.
      */
     public static InitializedConfiguration configureFromProperties(HierarchicalConfiguration defaults,
-                                                        HierarchicalConfigurationDeserializer deserializer)
+                                                                   HierarchicalConfigurationDeserializer deserializer)
             throws ConfigurationException {
         String desiredSourceName = System.getProperty(LIBRARY_PREFIX + ".type");
         if (desiredSourceName == null) {
             throw new ConfigurationException("System property " + LIBRARY_PREFIX + ".type is not set.");
         }
 
-        ConfigurationSource desiredSource = sourceFromString(desiredSourceName);
+        return configureFromProperties(desiredSourceName, defaults, deserializer);
+    }
+
+    /**
+     * Use system properties to initialize a configuration instance.
+     *
+     * @param defaults     Default configuration. Any keys not overridden by the dynamic configuration will remain as
+     *                     set here.
+     * @param deserializer Deserializer used to interpret the language the configuration file is written in.
+     * @return Thread-safe configuration instance.
+     * @throws ConfigurationException Thrown when the required system properties are not set.
+     */
+    public static InitializedConfiguration configureFromProperties(String sourceType,
+                                                                   HierarchicalConfiguration defaults,
+                                                                   HierarchicalConfigurationDeserializer deserializer)
+            throws ConfigurationException {
+
+        ConfigurationSource desiredSource = sourceFromString(sourceType);
         Configuration sourceConfiguration = gatherPropertiesFor(desiredSource, deserializer);
 
         return initialize(desiredSource, sourceConfiguration, deserializer, defaults);
