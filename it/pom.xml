@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.lable.oss.dynamicconfig</groupId>
     <artifactId>dynamicconfig</artifactId>
-    <version>3.0-beta2-SNAPSHOT</version>
+    <version>3.0</version>
   </parent>
 
   <artifactId>dynamic-config-it</artifactId>

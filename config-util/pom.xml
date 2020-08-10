@@ -21,11 +21,11 @@
   <parent>
     <artifactId>dynamicconfig</artifactId>
     <groupId>org.lable.oss.dynamicconfig</groupId>
-    <version>3.0-beta2-SNAPSHOT</version>
+    <version>3.0</version>
   </parent>
 
   <artifactId>config-util</artifactId>
-  <version>3.0-beta2-SNAPSHOT</version>
+  <version>3.0</version>
   <packaging>jar</packaging>
 
   <name>Dynamic configuration :: Config utility</name>
