@@ -1,7 +1,0 @@
-extends: base1.yaml
-
-outer:
-    branch-a: !include inc1.yaml
-    branch-b:
-        test: XXX
-    def-a: 123

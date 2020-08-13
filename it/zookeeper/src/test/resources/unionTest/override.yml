@@ -1,5 +1,0 @@
-type:
-    string: "Overridden"
-tables:
-    table:
-        name: "Another"
