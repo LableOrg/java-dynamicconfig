@@ -17,7 +17,6 @@ package org.lable.oss.dynamicconfig.serialization.yaml;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
-import org.apache.commons.io.IOUtils;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationResult;
 import org.lable.oss.dynamicconfig.core.IncludeReference;
@@ -28,11 +27,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +40,6 @@ import java.util.Scanner;
  */
 public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
     private final Yaml yaml;
-
     /**
      * Construct a new YamlSerializerDeserializer.
      */
@@ -62,7 +56,7 @@ public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
      */
     @Override
     public ConfigurationResult deserialize(InputStream input) throws ConfigurationException {
-        String content = new Scanner(input, "UTF-8").useDelimiter("\\A").next();
+        String content = new Scanner(input, StandardCharsets.UTF_8).useDelimiter("\\A").next();
 
         HierarchicalConfiguration configuration = new HierarchicalConfiguration();
         List<IncludeReference> includes = new ArrayList<>();
@@ -75,7 +69,7 @@ public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
             }
             traverseTreeAndLoad(configuration.getRootNode(), null, includes, tree);
 
-            // Get the references from the special 'extends' key.
+            // Get the references from the special 'extends' key.
             for (String reference : configuration.getStringArray("extends")) {
                 includes.add(new IncludeReference(reference));
             }
