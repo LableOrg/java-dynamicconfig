@@ -17,7 +17,6 @@ package org.lable.oss.dynamicconfig.provider.etcd;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
-import io.etcd.jetcd.launcher.junit4.EtcdClusterResource;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -43,7 +42,6 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.lable.oss.dynamicconfig.core.ConfigurationManager.*;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.LIBRARY_PREFIX;
 import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.delete;
 import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.put;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,7 +50,7 @@ import static org.mockito.Mockito.verify;
 
 public class EtcdAsConfigSourceIT {
     @ClassRule
-    public static final EtcdClusterResource etcd = new EtcdClusterResource("test-etcd", 1);
+    public static final EtcdTestCluster etcd = new EtcdTestCluster("test-etcd", 1);
 
     final static int CLUSTER_ID = 4;
 
