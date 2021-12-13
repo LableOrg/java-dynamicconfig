@@ -26,7 +26,7 @@
 
   <groupId>org.lable.oss.dynamicconfig</groupId>
   <artifactId>dynamicconfig</artifactId>
-  <version>4.0</version>
+  <version>4.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Dynamic configuration</name>
@@ -73,7 +73,7 @@
     <connection>scm:git:git@github.com:LableOrg/java-dynamicconfig.git</connection>
     <developerConnection>scm:git:git@github.com:LableOrg/java-dynamicconfig.git</developerConnection>
     <url>https://github.com/LableOrg/java-dynamicconfig</url>
-    <tag>v4.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <developers>
