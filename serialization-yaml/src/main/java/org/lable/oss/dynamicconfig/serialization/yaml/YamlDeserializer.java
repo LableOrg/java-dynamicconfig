@@ -24,7 +24,6 @@ import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserialize
 import org.lable.oss.dynamicconfig.serialization.yaml.snake.CustomConstructor;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.InputStream;
@@ -64,7 +63,9 @@ public class YamlDeserializer implements HierarchicalConfigurationDeserializer {
             Object tree;
             try {
                 tree = yaml.load(content);
-            } catch (ParserException e) {
+            } catch (Throwable e) {
+                // SnakeYaml throws a number of exceptions on encountering invalid YAML.
+                // This catch is overly broad on purpose.
                 throw new ConfigurationException("Failed to parse input as valid YAML.", e);
             }
             traverseTreeAndLoad(configuration.getRootNode(), null, includes, tree);
