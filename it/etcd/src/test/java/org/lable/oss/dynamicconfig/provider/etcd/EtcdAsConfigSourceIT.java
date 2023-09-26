@@ -27,9 +27,8 @@ import org.lable.oss.dynamicconfig.Precomputed;
 import org.lable.oss.dynamicconfig.core.*;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
-import org.mockito.ArgumentCaptor;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -42,8 +41,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.lable.oss.dynamicconfig.core.ConfigurationManager.*;
-import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.delete;
-import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.put;
+import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -93,7 +91,6 @@ public class EtcdAsConfigSourceIT {
     public void testLoad() throws Exception {
         ConfigChangeListener mockListener = mock(ConfigChangeListener.class);
         HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
-        ArgumentCaptor<InputStream> argument = ArgumentCaptor.forClass(InputStream.class);
 
         // Prepare the znode on the ZooKeeper.
         put(client, "test", "config:\n    string: XXX");
@@ -109,9 +106,9 @@ public class EtcdAsConfigSourceIT {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(mockListener).changed(eq("test"), argument.capture());
+        verify(mockListener).changed(eq("test"));
 
-        ConfigurationResult config = deserializer.deserialize(argument.getValue());
+        ConfigurationResult config = deserializer.deserialize(new ByteArrayInputStream(get(client, "test")));
 
         assertThat(config.getConfiguration().getString("config.string"), is("YYY"));
     }
@@ -131,11 +128,11 @@ public class EtcdAsConfigSourceIT {
         // Setup a listener to gather all returned configuration values.
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         final List<String> results = new ArrayList<>();
-        ConfigChangeListener listener = (name, is) -> {
+        ConfigChangeListener listener = name -> {
             ConfigurationResult conf;
             try {
-                conf = deserializer.deserialize(is);
-            } catch (ConfigurationException e) {
+                conf = deserializer.deserialize(new ByteArrayInputStream(get(client, name)));
+            } catch (ConfigurationException | ExecutionException | InterruptedException e) {
                 return;
             }
             String key = conf.getConfiguration().getString("key");
@@ -220,6 +217,15 @@ public class EtcdAsConfigSourceIT {
 
         put(client, "test", "key: AAA");
         TimeUnit.MILLISECONDS.sleep(300);
+
+        for (int i = 0; i < 10; i++) {
+            if (configuration.getString("key").equals("DEFAULT")) {
+                TimeUnit.MILLISECONDS.sleep(300);
+            } else {
+                break;
+            }
+        }
+
 
         assertThat(count.get(), is(1));
         assertThat(configuration.getString("key"), is("AAA"));

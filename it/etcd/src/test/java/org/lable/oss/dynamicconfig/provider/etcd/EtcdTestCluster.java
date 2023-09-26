@@ -53,6 +53,7 @@ public class EtcdTestCluster implements TestRule {
                         .withClusterName(clusterName)
                         .withNodes(nodes)
                         .withSsl(ssl)
+                        .withMountedDataDirectory(false)
                         .build();
 
                 cluster.start();

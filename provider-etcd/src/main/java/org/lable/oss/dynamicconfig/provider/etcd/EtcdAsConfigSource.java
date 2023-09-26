@@ -30,14 +30,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 /**
  * Retrieve configuration from an Etcd cluster, and maintain a watch for updates.
@@ -47,8 +46,10 @@ public class EtcdAsConfigSource implements ConfigurationSource {
 
     private Client etcd;
     private String namespace;
-    private Map<String, Watch.Watcher> watches = new HashMap<>();
+    private ExecutorService executor;
     private ConfigChangeListener changeListener;
+
+    private final Map<String, Watch.Watcher> watches = new HashMap<>();
 
     /**
      * {@inheritDoc}
@@ -108,13 +109,14 @@ public class EtcdAsConfigSource implements ConfigurationSource {
             defaults.setProperty(copyClusterTo, cluster);
         }
 
-        this.namespace = namespace;
         this.changeListener = changeListener;
-
+        this.namespace = namespace;
         this.etcd = Client.builder()
                 .endpoints(cluster)
                 .namespace(ByteSequence.from(namespace, StandardCharsets.UTF_8))
                 .build();
+
+        this.executor = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -130,8 +132,7 @@ public class EtcdAsConfigSource implements ConfigurationSource {
 
                 switch (event.getEventType()) {
                     case PUT:
-                        byte[] value = kv.getValue().getBytes();
-                        changeListener.changed(name, new ByteArrayInputStream(value));
+                        executor.submit(() -> this.changeListener.changed(name));
                         break;
                     case DELETE:
                         logger.error("Configuration key {} deleted. Waiting for it to be recreated…", name);
@@ -172,7 +173,15 @@ public class EtcdAsConfigSource implements ConfigurationSource {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
+        try {
+            boolean terminated = this.executor.awaitTermination(5, TimeUnit.SECONDS);
+            if (!terminated) {
+                logger.error("Failed to terminate the change-listeners.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         etcd.close();
     }
 

@@ -17,6 +17,7 @@ package org.lable.oss.dynamicconfig.provider.etcd;
 
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
+import io.etcd.jetcd.kv.GetResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
@@ -26,8 +27,19 @@ public class EtcdTestUtil {
         etcd.getKVClient().put(byteSequenceFromString(key), byteSequenceFromString(value)).get();
     }
 
+    public static byte[] get(Client etcd, String key) throws ExecutionException, InterruptedException {
+        GetResponse value = etcd.getKVClient().get(byteSequenceFromString(key)).get();
+        // Good enough for unit tests. :)
+        return value.getKvs().get(0).getValue().getBytes();
+    }
+
     public static void delete(Client etcd, String key) throws ExecutionException, InterruptedException {
         etcd.getKVClient().delete(byteSequenceFromString(key)).get();
+    }
+
+    public static String getAsString(Client etcd, String key) throws ExecutionException, InterruptedException {
+        GetResponse value = etcd.getKVClient().get(byteSequenceFromString(key)).get();
+        return value.getKvs().get(0).getValue().toString(StandardCharsets.UTF_8);
     }
 
     public static ByteSequence byteSequenceFromString(String value) {

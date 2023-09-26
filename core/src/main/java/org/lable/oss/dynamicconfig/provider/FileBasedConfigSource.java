@@ -139,11 +139,7 @@ public class FileBasedConfigSource implements ConfigurationSource {
                 logger.info("Configuration part file {}, reloading configuration.", mutation);
                 Path relativeToRootDir = rootDir.resolve(filePath);
                 String name = pathNameMapping.putIfAbsent(relativeToRootDir, relativeToRootDir.toString());
-                try {
-                    changeListener.changed(name, load(name));
-                } catch (ConfigurationException e) {
-                    logger.error("Failed to load configuration part " + name + ".", e);
-                }
+                changeListener.changed(name);
                 break;
             case FILE_DELETED:
                 logger.warn("Configuration part file {} was deleted. Its contents will be kept in configuration memory until " +

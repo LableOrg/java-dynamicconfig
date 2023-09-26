@@ -15,8 +15,6 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
-import java.io.InputStream;
-
 /**
  * Callback for a changed configuration tree.
  */
@@ -26,7 +24,6 @@ public interface ConfigChangeListener {
      * Called when a configuration part is mutated.
      *
      * @param name        Name of the configuration part.
-     * @param inputStream Input stream containing the changed data.
      */
-    void changed(String name, InputStream inputStream);
+    void changed(String name);
 }

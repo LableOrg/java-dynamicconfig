@@ -155,7 +155,7 @@ public class ConfigurationManager {
         desiredSource.configure(
                 sourceConfiguration,
                 defaults,
-                (name, inputStream) -> {
+                name -> {
                     logger.info("New runtime configuration received for configuration part {}.", name);
                     composition.markReferenceAsNeedsLoading(name);
                     load(name, desiredSource, deserializer, composition);
