@@ -15,27 +15,15 @@
  */
 package org.lable.oss.dynamicconfig.di;
 
-import com.google.inject.Inject;
-import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import java.io.Closeable;
 
 /**
- * Provides a singleton, thread-safe configuration instance.
+ * Consumers of this library can choose to implement this interface and bind it as an optional dependency to register
+ * the shutdown hook of {@link ConfigurationManager}. If bound, {@link ConfigurationManager} will register itself via
+ * {@link #register(Closeable)}.
  */
-@Singleton
-public class ConfigurationProvider implements Provider<Configuration> {
-    final ConfigurationManager configurationManager;
-
-    @Inject
-    ConfigurationProvider(ConfigurationManager configurationManager) {
-        this.configurationManager = configurationManager;
-    }
-
-    @Override
-    public Configuration get() {
-        return this.configurationManager.getConfiguration();
-    }
+public interface ConfigurationManagerCloser {
+    void register(Closeable closeable);
 }

@@ -18,6 +18,7 @@ package org.lable.oss.dynamicconfig.provider;
 import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationConnection;
 import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.io.InputStream;
 /**
  * Load configuration from a file on the classpath.
  */
-public class OnClasspathConfigSource implements ConfigurationSource {
+public class OnClasspathConfigSource implements ConfigurationSource, ConfigurationConnection {
     /**
      * Construct a new OnClasspathConfigSource.
      */
@@ -42,13 +43,14 @@ public class OnClasspathConfigSource implements ConfigurationSource {
         return "classpath";
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
-            throws ConfigurationException {
+    public void configure(Configuration configuration, Configuration defaults) throws ConfigurationException {
         // No-op.
+    }
+
+    @Override
+    public ConfigurationConnection connect(ConfigChangeListener changeListener) throws ConfigurationException {
+        return this;
     }
 
     /**

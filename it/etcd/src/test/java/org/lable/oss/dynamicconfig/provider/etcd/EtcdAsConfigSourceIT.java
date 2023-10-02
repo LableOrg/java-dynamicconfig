@@ -25,10 +25,12 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.Precomputed;
 import org.lable.oss.dynamicconfig.core.*;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationConnection;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -40,8 +42,9 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.*;
+import static org.lable.oss.dynamicconfig.core.ConfigurationLoader.*;
 import static org.lable.oss.dynamicconfig.provider.etcd.EtcdTestUtil.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -82,9 +85,12 @@ public class EtcdAsConfigSourceIT {
         config.setProperty("cluster", testConfig.getProperty("cluster"));
         config.setProperty("namespace", "/nope/nope");
         config.setProperty(APPNAME_PROPERTY, "nope");
-        source.configure(config, new BaseConfiguration(), mockListener);
-
-        source.load("nope");
+        source.configure(config, new BaseConfiguration());
+        try (ConfigurationConnection connection = source.connect(mockListener)) {
+            connection.load("nope");
+        } catch (IOException e) {
+            // OK.
+        }
     }
 
     @Test
@@ -96,21 +102,23 @@ public class EtcdAsConfigSourceIT {
         put(client, "test", "config:\n    string: XXX");
 
         EtcdAsConfigSource source = new EtcdAsConfigSource();
-        source.configure(testConfig, new BaseConfiguration(), mockListener);
+        source.configure(testConfig, new BaseConfiguration());
 
-        source.listen("test");
+        try (ConfigurationConnection connection = source.connect(mockListener)) {
+            connection.listen("test");
 
-        TimeUnit.MILLISECONDS.sleep(100);
+            TimeUnit.MILLISECONDS.sleep(100);
 
-        put(client, "test", "config:\n    string: YYY");
+            put(client, "test", "config:\n    string: YYY");
 
-        TimeUnit.MILLISECONDS.sleep(100);
+            TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(mockListener).changed(eq("test"));
+            verify(mockListener).changed(any(), eq("test"));
 
-        ConfigurationResult config = deserializer.deserialize(new ByteArrayInputStream(get(client, "test")));
+            ConfigurationResult config = deserializer.deserialize(new ByteArrayInputStream(get(client, "test")));
 
-        assertThat(config.getConfiguration().getString("config.string"), is("YYY"));
+            assertThat(config.getConfiguration().getString("config.string"), is("YYY"));
+        }
     }
 
     @Test
@@ -128,7 +136,7 @@ public class EtcdAsConfigSourceIT {
         // Setup a listener to gather all returned configuration values.
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         final List<String> results = new ArrayList<>();
-        ConfigChangeListener listener = name -> {
+        ConfigChangeListener listener = (configurationConnection, name) -> {
             ConfigurationResult conf;
             try {
                 conf = deserializer.deserialize(new ByteArrayInputStream(get(client, name)));
@@ -140,9 +148,11 @@ public class EtcdAsConfigSourceIT {
         };
 
         EtcdAsConfigSource source = new EtcdAsConfigSource();
-        source.configure(testConfig, defaults, listener);
+        source.configure(testConfig, defaults);
 
-        source.listen("test");
+        ConfigurationConnection connection = source.connect(listener);
+
+        connection.listen("test");
 
         TimeUnit.MILLISECONDS.sleep(300);
         put(client, "test", VALUE_B);
@@ -157,11 +167,11 @@ public class EtcdAsConfigSourceIT {
         TimeUnit.MILLISECONDS.sleep(300);
         put(client, "test", VALUE_D);
         TimeUnit.MILLISECONDS.sleep(300);
-        source.stopListening("test");
+        connection.stopListening("test");
         TimeUnit.MILLISECONDS.sleep(300);
         put(client, "test", VALUE_A);
         TimeUnit.MILLISECONDS.sleep(300);
-        source.listen("test");
+        connection.listen("test");
         TimeUnit.MILLISECONDS.sleep(300);
         put(client, "test", VALUE_B);
         TimeUnit.MILLISECONDS.sleep(300);
@@ -172,13 +182,14 @@ public class EtcdAsConfigSourceIT {
         assertThat(results.get(2), is("DDD"));
         assertThat(results.get(3), is("BBB"));
 
-        source.close();
+        connection.close();
         TimeUnit.MILLISECONDS.sleep(300);
 
         put(client, "test", "{BOGUS_YAML");
         TimeUnit.MILLISECONDS.sleep(300);
 
         assertThat(results.size(), is(4));
+
     }
 
     @Test
@@ -192,7 +203,7 @@ public class EtcdAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+        ConfigurationManager ic = ConfigurationLoader.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
         Configuration configuration = ic.getConfiguration();
@@ -247,7 +258,7 @@ public class EtcdAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+        ConfigurationManager ic = ConfigurationLoader.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
         Configuration configuration = ic.getConfiguration();
@@ -293,7 +304,7 @@ public class EtcdAsConfigSourceIT {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("key", "DEFAULT");
 
-        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+        ConfigurationManager ic = ConfigurationLoader.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
         Configuration configuration = ic.getConfiguration();

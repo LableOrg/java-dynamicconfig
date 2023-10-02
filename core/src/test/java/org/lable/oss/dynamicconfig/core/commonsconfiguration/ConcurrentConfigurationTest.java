@@ -33,7 +33,7 @@ public class ConcurrentConfigurationTest {
     @Test
     public void testMethodWrappers() {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
-        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
+        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration);
 
         concurrentConfiguration.subset("subset");
         concurrentConfiguration.isEmpty();
@@ -115,28 +115,28 @@ public class ConcurrentConfigurationTest {
     @Test(expected = UnsupportedOperationException.class)
     public void addPropertyTest() {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
-        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
+        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration);
         concurrentConfiguration.addProperty("test", "test");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void setPropertyTest() {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
-        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
+        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration);
         concurrentConfiguration.setProperty("test", "test");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void clearPropertyTest() {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
-        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
+        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration);
         concurrentConfiguration.clearProperty("test");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void clearTest() {
         CombinedConfiguration mockConfiguration = mock(CombinedConfiguration.class);
-        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration, null);
+        Configuration concurrentConfiguration = new ConcurrentConfiguration(mockConfiguration);
         concurrentConfiguration.clear();
     }
 

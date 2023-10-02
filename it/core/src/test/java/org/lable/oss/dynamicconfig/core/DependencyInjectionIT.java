@@ -23,11 +23,11 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.di.ConfigurationDefaults;
+import org.lable.oss.dynamicconfig.di.ConfigurationManagerProvider;
 import org.lable.oss.dynamicconfig.di.ConfigurationProvider;
 import org.lable.oss.dynamicconfig.di.DynamicConfigModule;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -36,14 +36,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class DependencyInjectionIT {
     @Test
     public void diProviderTest() throws IOException {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
 
         Injector injector = Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
                 bind(HierarchicalConfigurationDeserializer.class).to(YamlDeserializer.class);
                 bind(Configuration.class).toProvider(ConfigurationProvider.class);
+                bind(ConfigurationManager.class).toProvider(ConfigurationManagerProvider.class);
             }
         });
 
@@ -51,13 +52,15 @@ public class DependencyInjectionIT {
 
         assertThat(configuration, is(not(nullValue())));
 
-        ((Closeable) configuration).close();
+        ConfigurationManager configurationManager = injector.getInstance(ConfigurationManager.class);
+
+        configurationManager.close();
     }
 
     @Test
     public void diProviderTestWithDefaults() {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");
@@ -68,6 +71,7 @@ public class DependencyInjectionIT {
                 bind(HierarchicalConfiguration.class).annotatedWith(ConfigurationDefaults.class).toInstance(defaults);
                 bind(HierarchicalConfigurationDeserializer.class).to(YamlDeserializer.class);
                 bind(Configuration.class).toProvider(ConfigurationProvider.class);
+                bind(ConfigurationManager.class).toProvider(ConfigurationManagerProvider.class);
             }
         });
 
@@ -81,8 +85,8 @@ public class DependencyInjectionIT {
 
     @Test
     public void diModuleTest() throws IOException {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
 
         Injector injector = Guice.createInjector(new DynamicConfigModule());
 
@@ -90,13 +94,15 @@ public class DependencyInjectionIT {
 
         assertThat(configuration, is(not(nullValue())));
 
-        ((Closeable)configuration).close();
+        ConfigurationManager configurationManager = injector.getInstance(ConfigurationManager.class);
+
+        configurationManager.close();
     }
 
     @Test
     public void diModuleTestWithDefaults() {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
         final HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");

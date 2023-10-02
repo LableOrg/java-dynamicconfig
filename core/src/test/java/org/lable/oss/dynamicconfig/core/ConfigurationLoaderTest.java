@@ -24,13 +24,13 @@ import java.util.List;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.makeReferencesAbsolute;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.solveDots;
+import static org.lable.oss.dynamicconfig.core.ConfigurationLoader.makeReferencesAbsolute;
+import static org.lable.oss.dynamicconfig.core.ConfigurationLoader.solveDots;
 
-public class ConfigurationManagerTest {
+public class ConfigurationLoaderTest {
     @Test
     public void detectServiceProvidersTest() {
-        List<ConfigurationSource> result = ConfigurationManager.detectConfigurationSourceServiceProviders();
+        List<ConfigurationSource> result = ConfigurationLoader.detectConfigurationSourceServiceProviders();
 
         assertThat(result.size(), is(2));
         assertThat(result.get(0).name(), is("file"));

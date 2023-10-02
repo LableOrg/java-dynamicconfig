@@ -21,6 +21,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationResult;
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationConnection;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlDeserializer;
 import org.lable.oss.dynamicconfig.serialization.yaml.YamlSerializer;
@@ -31,26 +32,29 @@ import java.net.URL;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.lable.oss.dynamicconfig.core.ConfigurationManager.ROOTCONFIG_PROPERTY;
+import static org.lable.oss.dynamicconfig.core.ConfigurationLoader.ROOTCONFIG_PROPERTY;
 
 public class FileBasedConfigSourceIT {
     @Test
-    public void testLoad() throws URISyntaxException, InterruptedException, IOException, ConfigurationException {
+    public void testLoad() throws URISyntaxException, IOException, ConfigurationException {
         final String INPUT = "test.yml";
         URL testUrl = getClass().getResource("/" + INPUT);
         final String testYaml = testUrl.toURI().getPath();
         FileBasedConfigSource source = new FileBasedConfigSource();
         Configuration config = new BaseConfiguration();
         config.setProperty(ROOTCONFIG_PROPERTY, testYaml);
-        source.configure(config, new HierarchicalConfiguration(), null);
+        source.configure(config, new HierarchicalConfiguration());
+        HierarchicalConfigurationDeserializer deserializer;
 
-        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
+        try (ConfigurationConnection connection = source.connect(null)) {
+            deserializer = new YamlDeserializer();
 
-        InputStream is = source.load("test.yml");
+            InputStream is = connection.load("test.yml");
 
-        ConfigurationResult result = deserializer.deserialize(is);
-        Configuration configuration = result.getConfiguration();
-        assertThat(configuration.getString("type.unicodeString"), is("€"));
+            ConfigurationResult result = deserializer.deserialize(is);
+            Configuration configuration = result.getConfiguration();
+            assertThat(configuration.getString("type.unicodeString"), is("€"));
+        }
     }
 
     @Test
@@ -61,18 +65,20 @@ public class FileBasedConfigSourceIT {
         FileBasedConfigSource source = new FileBasedConfigSource();
         Configuration config = new BaseConfiguration();
         config.setProperty(ROOTCONFIG_PROPERTY, testYaml);
-        source.configure(config, new HierarchicalConfiguration(), null);
+        source.configure(config, new HierarchicalConfiguration());
 
-        HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
+        try (ConfigurationConnection connection = source.connect(null)) {
+            HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
 
-        InputStream is = source.load("root.yaml");
+            InputStream is = connection.load("root.yaml");
 
-        ConfigurationResult result = deserializer.deserialize(is);
-        HierarchicalConfiguration configuration = result.getConfiguration();
+            ConfigurationResult result = deserializer.deserialize(is);
+            HierarchicalConfiguration configuration = result.getConfiguration();
 
-        YamlSerializer serializer = new YamlSerializer();
+            YamlSerializer serializer = new YamlSerializer();
 
-        serializer.serialize(configuration, System.out);
+            serializer.serialize(configuration, System.out);
+        }
 
 //        assertThat(configuration.getString("type.unicodeString"), is("€"));
     }

@@ -19,22 +19,16 @@ import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.ConfigChangeListener;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 
-import java.io.Closeable;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Service provider interface for a source of configuration information.
  * <p>
- * The general contract of this interface is that {@link #configure(Configuration, Configuration, ConfigChangeListener)}
- * is called before the two primary methods:
- * <ul>
- * <li>{@link #load(String)}
- * <li>{@link #listen(String)}
- * </ul>
+ * The general contract of this interface is that {@link #configure(Configuration, Configuration)}
+ * is called before {@link #connect(ConfigChangeListener)}.
  */
-public interface ConfigurationSource extends Closeable {
+public interface ConfigurationSource {
 
     /**
      * The simple name of an implementation of {@link ConfigurationSource} should be unique. It is used to link
@@ -58,35 +52,11 @@ public interface ConfigurationSource extends Closeable {
      *
      * @param configuration  Configuration parameters for this implementation.
      * @param defaults       Default settings. Implementing classes may add configuration parameters to this.
-     * @param changeListener Listener to inform of changes in the configuration source.
      */
-    void configure(Configuration configuration, Configuration defaults, ConfigChangeListener changeListener)
+    void configure(Configuration configuration, Configuration defaults)
             throws ConfigurationException;
 
-    /**
-     * Start listening for changes in the specified configuration part, and notify a listener of changes.
-     * <p>
-     * Implementing classes may or may not act on this call, depending on their nature. Static configuration sources
-     * for example are presumed to never change, so no callback will ever occur for those implementations.
-     *
-     * @param name Configuration part name.
-     */
-    void listen(String name);
-
-    /**
-     * Stop listening for changes in the specified configuration part.
-     *
-     * @param name Configuration part name.
-     */
-    void stopListening(String name);
-
-    /**
-     * Load configuration from this source once.
-     *
-     * @param name Configuration part name.
-     * @throws ConfigurationException Thrown when loading the configuration fails.
-     */
-    InputStream load(String name) throws ConfigurationException;
+    ConfigurationConnection connect(ConfigChangeListener changeListener) throws ConfigurationException;
 
     /**
      * Turn the root config name into its corresponding configuration part name. E.g., for a file based configuration

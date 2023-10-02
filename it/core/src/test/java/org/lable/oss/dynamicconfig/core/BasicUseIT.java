@@ -27,9 +27,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class BasicUseIT {
     @Test
     public void noDefaultsClasspathTest() throws ConfigurationException {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
-        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        ConfigurationManager ic = ConfigurationLoader.configureFromProperties(
                 new YamlDeserializer()
         );
         Configuration configuration = ic.getConfiguration();
@@ -39,13 +39,13 @@ public class BasicUseIT {
 
     @Test
     public void withDefaultsClasspathTest() throws ConfigurationException {
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".type", "classpath");
-        System.setProperty(ConfigurationManager.LIBRARY_PREFIX + ".rootconfig", "test.yml");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".type", "classpath");
+        System.setProperty(ConfigurationLoader.LIBRARY_PREFIX + ".rootconfig", "test.yml");
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
         defaults.setProperty("type.string", "Not okay");
         defaults.setProperty("only.in.defaults", "XXX");
 
-        InitializedConfiguration ic = ConfigurationManager.configureFromProperties(
+        ConfigurationManager ic = ConfigurationLoader.configureFromProperties(
                 defaults, new YamlDeserializer()
         );
         Configuration configuration = ic.getConfiguration();

@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ConfigurationManagerIT {
+public class ConfigurationLoaderIT {
     @Test
     public void testMultipleFilesConfig() throws ConfigurationException, URISyntaxException {
         HierarchicalConfiguration defaults = new HierarchicalConfiguration();
@@ -51,7 +51,7 @@ public class ConfigurationManagerIT {
         URL testUrl = getClass().getResource("/" + INPUT);
         final String testYaml = testUrl.toURI().getPath();
         Configuration sourceConfiguration = new BaseConfiguration();
-        InitializedConfiguration ic = ConfigurationManager.fromTheseSettings(
+        ConfigurationManager ic = ConfigurationLoader.fromTheseSettings(
                 testYaml,
                 "app",
                 new FileBasedConfigSource(),
@@ -98,7 +98,7 @@ public class ConfigurationManagerIT {
         defaults.setProperty("outer.branch-a.x", "x");
 
         Configuration sourceConfiguration = new BaseConfiguration();
-        InitializedConfiguration ic = ConfigurationManager.fromTheseSettings(
+        ConfigurationManager ic = ConfigurationLoader.fromTheseSettings(
                 dir.resolve("root.yaml").toString(),
                 "app",
                 new FileBasedConfigSource(),
@@ -143,9 +143,9 @@ public class ConfigurationManagerIT {
     public void printConfig(ConcurrentConfiguration configuration) {
         YamlSerializer serializer = new YamlSerializer();
 
-        ConfigurationManager.composition.allReferences.keySet().forEach(
+        ConfigurationLoader.composition.allReferences.keySet().forEach(
                 s -> {
-                    ConfigReference ref = ConfigurationManager.composition.allReferences.get(s);
+                    ConfigReference ref = ConfigurationLoader.composition.allReferences.get(s);
                     try {
                         serializer.serialize(ref.configuration, System.out);
                         System.out.println("---");

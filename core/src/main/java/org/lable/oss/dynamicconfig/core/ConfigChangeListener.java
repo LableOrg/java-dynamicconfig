@@ -15,6 +15,8 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
+import org.lable.oss.dynamicconfig.core.spi.ConfigurationConnection;
+
 /**
  * Callback for a changed configuration tree.
  */
@@ -23,7 +25,8 @@ public interface ConfigChangeListener {
     /**
      * Called when a configuration part is mutated.
      *
-     * @param name        Name of the configuration part.
+     * @param configurationConnection Configuration connection.
+     * @param name                    Name of the configuration part.
      */
-    void changed(String name);
+    void changed(ConfigurationConnection configurationConnection, String name);
 }

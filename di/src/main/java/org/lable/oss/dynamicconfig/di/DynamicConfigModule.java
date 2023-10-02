@@ -20,6 +20,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.apache.commons.configuration.Configuration;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
+import org.lable.oss.dynamicconfig.core.ConfigurationManager;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class DynamicConfigModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(ConfigurationManager.class).toProvider(ConfigurationManagerProvider.class).in(Singleton.class);
         bind(Configuration.class).toProvider(ConfigurationProvider.class).in(Singleton.class);
     }
 

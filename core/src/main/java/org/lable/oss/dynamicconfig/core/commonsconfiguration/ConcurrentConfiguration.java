@@ -17,13 +17,7 @@ package org.lable.oss.dynamicconfig.core.commonsconfiguration;
 
 import org.apache.commons.configuration.CombinedConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.lable.oss.dynamicconfig.core.spi.ConfigurationSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.PreDestroy;
-import java.io.Closeable;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Iterator;
@@ -37,9 +31,7 @@ import java.util.function.Consumer;
 /**
  * Provides thread safe access to a {@link CombinedConfiguration} instance.
  */
-public class ConcurrentConfiguration implements Configuration, Closeable {
-    private final Logger logger = LoggerFactory.getLogger(ConcurrentConfiguration.class);
-
+public class ConcurrentConfiguration implements Configuration {
     public static final String MODIFICATION_TIMESTAMP = "dc.last-modified-at";
 
     // This lock allows for multiple concurrent readers, but if a write-lock is acquired no other threads can read or
@@ -49,22 +41,14 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
     private final Lock writeLock = lock.writeLock();
 
     final CombinedConfiguration wrapped;
-    final Closeable configurationSource;
 
     final static String NO_MODIFICATION_MESSAGE =
             "This configuration class does not permit modification, " +
-            "except through #updateConfiguration(String, Configuration).";
-
-    public ConcurrentConfiguration(CombinedConfiguration wrapped, Closeable configurationSource) {
-        this.wrapped = wrapped;
-        this.configurationSource = configurationSource;
-        logger.info("Dynamic Configuration instance created.");
-    }
+            "except through #withConfiguration.";
 
     public ConcurrentConfiguration(CombinedConfiguration wrapped) {
-        this(wrapped, null);
+        this.wrapped = wrapped;
     }
-
     public void withConfiguration(Consumer<CombinedConfiguration> consumer) {
         writeLock.lock();
         try {
@@ -80,23 +64,8 @@ public class ConcurrentConfiguration implements Configuration, Closeable {
         wrapped.setProperty(MODIFICATION_TIMESTAMP, System.nanoTime());
     }
 
-    /**
-     * Close this configuration instance. The {@link ConfigurationSource} backing it will be closed as well. Call this
-     * when you are completely done with this instance; usually in your application tear-down.
-     *
-     * @throws IOException Declared by {@link Closeable#close()}.
-     */
-    @PreDestroy
-    @Override
-    public void close() throws IOException {
-        logger.info("Closing Dynamic Configuration instance.");
-        if (configurationSource != null) {
-            configurationSource.close();
-        }
-    }
-
     /*
-     * Mutations are forbidden, except through #updateConfiguration(). By disabling modification here,
+     * Mutations are forbidden, except through #withConfiguration(). By disabling modification here,
      * all Configuration methods implemented that remain are read-only.
      */
 

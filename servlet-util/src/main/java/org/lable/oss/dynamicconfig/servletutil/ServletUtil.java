@@ -15,7 +15,7 @@
  */
 package org.lable.oss.dynamicconfig.servletutil;
 
-import org.lable.oss.dynamicconfig.core.ConfigurationManager;
+import org.lable.oss.dynamicconfig.core.ConfigurationLoader;
 import org.lable.oss.dynamicconfig.core.InstanceLocalSettings;
 
 import javax.servlet.ServletContext;
@@ -25,7 +25,7 @@ import javax.servlet.ServletContextEvent;
  * Convenience methods for working with dynamic config from a servlet environment.
  */
 public class ServletUtil {
-    final static String APPNAME_PROPERTY = ConfigurationManager.LIBRARY_PREFIX + ".appname";
+    final static String APPNAME_PROPERTY = ConfigurationLoader.LIBRARY_PREFIX + ".appname";
 
     /**
      * Set the context-path as application name.

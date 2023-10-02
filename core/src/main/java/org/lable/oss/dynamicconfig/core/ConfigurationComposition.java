@@ -55,8 +55,13 @@ public class ConfigurationComposition {
      * @param defaultConfiguration Default configuration.
      */
     public ConfigurationComposition(HierarchicalConfiguration defaultConfiguration) {
+        reset(defaultConfiguration);
+    }
+
+    public void reset(HierarchicalConfiguration defaultConfiguration) {
         this.allReferences = new HashMap<>();
         this.defaultConfiguration = defaultConfiguration;
+        this.root = null;
     }
 
     /**
@@ -64,13 +69,9 @@ public class ConfigurationComposition {
      *
      * @param rootReference Configuration reference.
      */
-    public void setRootReference(ConfigReference rootReference) {
+    void setRootReference(ConfigReference rootReference) {
         extendFromDefaults(rootReference);
         this.root = rootReference;
-    }
-
-    public ConfigReference getRoot() {
-        return root;
     }
 
     /**
@@ -82,7 +83,7 @@ public class ConfigurationComposition {
      * @param newReferences The part's new references.
      * @return The named configuration part's {@link ConfigReference}.
      */
-    public synchronized ConfigReference updateReferences(String name, List<IncludeReference> newReferences) {
+    synchronized ConfigReference updateReferences(String name, List<IncludeReference> newReferences) {
         ConfigReference current = allReferences.computeIfAbsent(name, ConfigReference::new);
         // Unlink all existing references for this ConfigReference.
         final Set<ConfigReference> dereferenced = current.unlinkAllReferences();
@@ -111,33 +112,32 @@ public class ConfigurationComposition {
         return current;
     }
 
-    public synchronized void setConfigurationOnReference(ConfigReference reference,
+    synchronized void setConfigurationOnReference(ConfigReference reference,
                                                          HierarchicalConfiguration configuration) {
         reference.setConfiguration(configuration);
         reference.markTimeOfUpdate();
     }
 
-    public synchronized ConfigReference markReferenceAsFailedToLoad(String name) {
+    synchronized ConfigReference markReferenceAsFailedToLoad(String name) {
         ConfigReference current = allReferences.computeIfAbsent(name, ConfigReference::new);
         current.markAsFailedToLoad();
         return current;
     }
 
-    public synchronized ConfigReference markReferenceAsNeedsLoading(String name) {
+    synchronized void markReferenceAsNeedsLoading(String name) {
         ConfigReference current = allReferences.computeIfAbsent(name, ConfigReference::new);
         current.markAsNeedsLoading();
-        return current;
     }
 
-    public synchronized boolean hasMatchingReference(String name, Predicate<ConfigReference> filter) {
+    synchronized boolean hasMatchingReference(String name, Predicate<ConfigReference> filter) {
         return allReferences.containsKey(name) && filter.test(allReferences.get(name));
     }
 
-    public synchronized ConfigReference getReference(String name) {
+    synchronized ConfigReference getReference(String name) {
         return allReferences.get(name);
     }
 
-    public synchronized List<ConfigReference> getReferences(Predicate<ConfigReference> filter) {
+    synchronized List<ConfigReference> getReferences(Predicate<ConfigReference> filter) {
         return allReferences.values().stream().filter(filter).collect(Collectors.toList());
     }
 
@@ -152,7 +152,7 @@ public class ConfigurationComposition {
      */
     public synchronized void assembleConfigTree(CombinedConfiguration combinedConfig) {
         combinedConfig.clear();
-        assembleConfigSection(combinedConfig, root);
+        assembleConfigSection(combinedConfig);
         setMetadata(combinedConfig);
     }
 
@@ -160,9 +160,8 @@ public class ConfigurationComposition {
      * Recursively assemble the combined configuration.
      *
      * @param combinedConfig  Configuration object to write the configuration to.
-     * @param configReference Configuration reference to process.
      */
-    void assembleConfigSection(CombinedConfiguration combinedConfig, ConfigReference configReference) {
+    void assembleConfigSection(CombinedConfiguration combinedConfig) {
         walk((path, ref) -> {
             // Give every configuration part a unique name.
             String name = (path == null ? "" : path) + "->" + ref.getName();
@@ -185,9 +184,7 @@ public class ConfigurationComposition {
             String name = (path == null ? "." : path) + " -> " + ref.getName();
             builder.append(name);
 
-            for (int i = name.length(); i < 60; i++) {
-                builder.append(' ');
-            }
+            builder.append(" ".repeat(Math.max(0, 60 - name.length())));
             String updated = ref.getLastUpdated().map(Instant::toString).orElse("-");
             builder.append(" (").append(updated).append(")\n");
         });
@@ -283,10 +280,7 @@ public class ConfigurationComposition {
     }
 
     private void nodeToString(StringBuilder builder, ConfigReference node, int depth) {
-        for (int i = 0; i < depth; i++) {
-            builder.append("  ");
-        }
-
+        builder.append("  ".repeat(Math.max(0, depth)));
         builder.append(node.getName()).append('\n');
 
         for (ConfigReference reference : node.referencedByMe.values()) {
