@@ -16,22 +16,22 @@
 package org.lable.oss.dynamicconfig.serialization.yaml;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigurationException;
 import org.lable.oss.dynamicconfig.core.ConfigurationResult;
 import org.lable.oss.dynamicconfig.core.IncludeReference;
 import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationDeserializer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class YamlDeserializerTest {
     @Test
@@ -44,7 +44,7 @@ public class YamlDeserializerTest {
         // Type checking.
         assertThat(config.getString("type.string"), is("Okay"));
 
-        List list = config.getList("type.listOfStrings");
+        List<?> list = config.getList("type.listOfStrings");
         for (Object o : list) {
             assertThat(o, instanceOf(String.class));
         }
@@ -93,6 +93,6 @@ public class YamlDeserializerTest {
     public void testLoadBogusYaml() throws ConfigurationException, IOException, ClassNotFoundException {
         HierarchicalConfigurationDeserializer deserializer = new YamlDeserializer();
         // This won't parse.
-        deserializer.deserialize(IOUtils.toInputStream("{BOGUS_YAML"));
+        deserializer.deserialize(new ByteArrayInputStream("{BOGUS_YAML".getBytes(StandardCharsets.UTF_8)));
     }
 }

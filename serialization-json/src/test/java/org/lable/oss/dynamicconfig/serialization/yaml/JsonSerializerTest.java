@@ -28,6 +28,7 @@ import org.lable.oss.dynamicconfig.core.spi.HierarchicalConfigurationSerializer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -48,7 +49,7 @@ public class JsonSerializerTest {
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         serializer.serialize(configuration, output, false);
-        String json = IOUtils.toString(new StringReader(output.toString("UTF-8")));
+        String json = IOUtils.toString(new StringReader(output.toString(StandardCharsets.UTF_8)));
         JsonNode tree = mapper.readTree(json);
 
         JsonNode nodeType = tree.get("type");
@@ -74,7 +75,7 @@ public class JsonSerializerTest {
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         serializer.serialize(configuration, output, true);
-        String json = IOUtils.toString(new StringReader(output.toString("UTF-8")));
+        String json = IOUtils.toString(new StringReader(output.toString(StandardCharsets.UTF_8)));
 
         assertThat(json.contains("\n"), is(true));
     }
