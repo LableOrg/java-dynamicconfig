@@ -16,6 +16,7 @@
 package org.lable.oss.dynamicconfig.core;
 
 import org.apache.commons.configuration.CombinedConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import java.time.Instant;
@@ -172,7 +173,7 @@ public class ConfigurationComposition {
         });
     }
 
-    void setMetadata(CombinedConfiguration combinedConfig) {
+    void setMetadata(Configuration combinedConfig) {
         combinedConfig.setProperty(META_MODIFIED_AT, Instant.now().toString());
 
         StringBuilder builder = new StringBuilder();
@@ -184,9 +185,14 @@ public class ConfigurationComposition {
             String name = (path == null ? "." : path) + " -> " + ref.getName();
             builder.append(name);
 
+
             builder.append(" ".repeat(Math.max(0, 60 - name.length())));
             String updated = ref.getLastUpdated().map(Instant::toString).orElse("-");
-            builder.append(" (").append(updated).append(")\n");
+            builder.append(" (")
+                    .append(ref.configState)
+                    .append(" @ ")
+                    .append(updated)
+                    .append(")\n");
         });
 
         combinedConfig.setProperty(META_MODIFIED_TREE, builder.toString());
@@ -393,9 +399,20 @@ public class ConfigurationComposition {
     }
 
     enum ConfigState {
-        NEEDS_LOADING,
-        LOADED,
-        FAILED_TO_LOAD,
-        ORPHANED
+        NEEDS_LOADING("PENDING"),
+        LOADED("OK"),
+        FAILED_TO_LOAD("FAILED"),
+        ORPHANED("ORPHANED");
+
+        private final String state;
+
+        ConfigState(String state) {
+            this.state = state;
+        }
+
+        @Override
+        public String toString() {
+            return state;
+        }
     }
 }

@@ -15,6 +15,8 @@
  */
 package org.lable.oss.dynamicconfig.core;
 
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.lable.oss.dynamicconfig.core.ConfigurationComposition.ConfigReference;
 import org.lable.oss.dynamicconfig.core.ConfigurationComposition.ConfigState;
@@ -78,6 +80,29 @@ public class ConfigurationCompositionTest {
         assertThat(references(composition, "c", "e1"), is(true));
         assertThat(references(composition, "c", "e2"), is(true));
         assertThat(references(composition, "root", "d"), is(true));
+    }
+
+    @Test
+    public void compositionMetaStatusTest() {
+        ConfigurationComposition composition = new ConfigurationComposition();
+        composition.setRootReference(composition.updateReferences(
+                "root", Arrays.asList(
+                        new IncludeReference("aaa", "a"),
+                        new IncludeReference("bbb", "b")
+                )
+        ));
+
+        Configuration configuration = new BaseConfiguration();
+        composition.setMetadata(configuration);
+
+        assertThat(
+                configuration.getString(ConfigurationComposition.META_MODIFIED_TREE),
+                is(
+                        ". -> root                                                    (PENDING @ -)\n" +
+                        "aaa -> a                                                     (PENDING @ -)\n" +
+                        "bbb -> b                                                     (PENDING @ -)\n"
+                )
+        );
     }
 
     @Test
