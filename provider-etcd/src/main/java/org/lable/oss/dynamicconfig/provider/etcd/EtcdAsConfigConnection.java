@@ -54,6 +54,7 @@ public class EtcdAsConfigConnection implements ConfigurationConnection {
         this.changeListener = changeListener;
         this.etcd = Client.builder()
                 .endpoints(cluster)
+                .loadBalancerPolicy("round_robin")
                 .namespace(ByteSequence.from(namespace, StandardCharsets.UTF_8))
                 .build();
 
